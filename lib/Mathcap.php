@@ -1,8 +1,53 @@
 <?php
 
-require_once "lib/fsdb.php";
-require_once "lib/LoomRandom.php";
-require_once "lib/Mathcap.php";
+class Mathcap {
+
+  function generate($scrambler) {
+    $x = mt_rand(1, 9);
+    $y = mt_rand(1, 9);
+    $plus = mt_rand(0, 1);
+    if ($plus == 0) {
+      $input = $x + $y;
+      $str = "$x + $y";
+    } else {
+      $input = $x * $y;
+      $str = "$x x $y";
+    }
+    $time = time();
+    $hash = md5($input ^ $time ^ $scrambler);
+    $res = array('string' => $str, 'input' => $input,
+                 'time' => $time, 'hash' => $hash);
+    // echo "<pre>"; print_r($res); echo "</pre><br>\n";
+    return $res;
+  }
+
+  function verify($input, $time, $hash, $scrambler) {
+    // Not sure why I have to convert from string, but I do.
+    $input = (int)$input;
+    $time = (int)$time;
+
+    // echo "input: $input, time: $time, hash: $hash<br>\n";
+    // echo "Calculated hash: " . md5($input ^ $time ^ $captcha_scrambler) . "<br>\n";
+    return md5($input ^ $time ^ $scrambler) == $hash;
+  }
+
+}
+
+// Test code
+/*
+$cap = new Mathcap();
+$scrambler = 12345;
+$gen = $cap->generate($scrambler);
+$input = $gen['input'];
+$inputplus1 = $input + 1;
+$time = $gen['time'];
+$hash = $gen['hash'];
+print_r($gen);
+echo "verify($input, $time, $hash, $scrambler) = " .
+     $cap->verify($input, $time, $hash, $scrambler) . "\n";
+echo "verify($inputplus1, $time, $hash, $scrambler) = " .
+     $cap->verify($inputplus1, $time, $hash, $scrambler) . "\n";
+*/
 
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1/Apache 2.0
