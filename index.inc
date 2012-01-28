@@ -5,7 +5,7 @@ The Patrick Henry Project is an idea proposed by
 publicized her invitation</a>. This site enables collection of those videos in one place.
 </p>
 <p>
-To post your video, click on "Post Your Video" in the left column. To view other videos, click on one of the "Videos" links in the left column.
+To post your video, click "Post Your Video" in the left column. To change a post you made earlier, click "Edit Your Video". To view other videos, click on one of the "Videos" links.
 </p>
 <p>
 This site does not save access logs. The only information it saves about you is what you submit on the "Post Your Video" page.

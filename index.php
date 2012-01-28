@@ -98,7 +98,7 @@ function content() {
 
 function submit() {
 ?>
-<p>Submission code not yet written.</p>
+<p>Submission doesn't work yet.</p>
 <?php
 }
 
@@ -155,7 +155,7 @@ function post() {
 </form>
 </p>
 <p>
-The only fields required above are the "YouTube video" field and the answer to the simple arithmetic problem. For "Youtube video", copy the address from your browser's address bar, or from YouTube's "Share" pop-up, and paste it here. It should look something like:
+The only fields required above are the "YouTube Video" field and the answer to the simple arithmetic problem. For "Youtube Video", copy the address from your browser's address bar, or from YouTube's "Share" pop-up, and paste it here. It should look something like:
 </p>
 <p style='margin-left: 2em;'>
 <code>http://www.youtube.com/watch?v=Cup9CgSjr9g</code>
@@ -236,7 +236,7 @@ To look up your video, enter your "Email" address and your "Password", and click
 
 function videos() {
 ?>
-<p>Videos go here</p>
+<p>Videos will go here</p>
 <?php
 }
 
