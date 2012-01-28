@@ -14,7 +14,7 @@ class Mathcap {
       $str = "$x x $y";
     }
     $time = time();
-    $hash = md5($input ^ $time ^ $scrambler);
+    $hash = sha1($input ^ $time ^ $scrambler);
     $res = array('string' => $str, 'input' => $input,
                  'time' => $time, 'hash' => $hash);
     // echo "<pre>"; print_r($res); echo "</pre><br>\n";
@@ -27,8 +27,8 @@ class Mathcap {
     $time = (int)$time;
 
     // echo "input: $input, time: $time, hash: $hash<br>\n";
-    // echo "Calculated hash: " . md5($input ^ $time ^ $captcha_scrambler) . "<br>\n";
-    return md5($input ^ $time ^ $scrambler) == $hash;
+    // echo "Calculated hash: " . sha1($input ^ $time ^ $captcha_scrambler) . "<br>\n";
+    return sha1($input ^ $time ^ $scrambler) == $hash;
   }
 
 }
@@ -36,7 +36,7 @@ class Mathcap {
 // Test code
 /*
 $cap = new Mathcap();
-$scrambler = 12345;
+$scrambler = sha1(12345);
 $gen = $cap->generate($scrambler);
 $input = $gen['input'];
 $inputplus1 = $input + 1;
