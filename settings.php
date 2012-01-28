@@ -1,0 +1,2 @@
+<?php
+$datadir = "../protected/patrickhenry";
