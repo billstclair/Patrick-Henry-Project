@@ -11,22 +11,29 @@ function mqreq($x) {
   return mq(@$_REQUEST[$x]);
 }
 
+function hsc($x) {
+  return htmlspecialchars($x);
+}
+
 // Read-only page display
 $page = mqreq('page');
 
 // Form parameters
 $cmd = mqreq('cmd');
 $youtube = mqreq('youtube');
+$video = '';
 $name = mqreq('name');
 $email = mqreq('email');
 $url = mqreq('url');
 $password = mqreq('password');
 $verify = mqreq('verify');
 $newpass = mqreq('newpass');
+$string = mqreq('string');
 $input = mqreq('input');
 $time = mqreq('time');
 $hash = mqreq('hash');
 $submit = mqreq('submit');
+$edit = mqreq('edit');
 $forgot = mqreq('forgot');
 $changepass = mqreq('changepass');
 
@@ -35,13 +42,16 @@ $infodb = new fsdb($infodir);
 $rand = new LoomRandom();
 $cap = new Mathcap();
 
+// True to not generate a new captcha
+$keepcap = FALSE;
+
 ?>
 <html>
 <head>
 <title>The Patrick Henry Project</title>
 </head>
-<body>
-<div style="width: 60em;">
+<body background='background.png'>
+<div style="width: 60em; margin: 4em auto 4em auto; border: 1px solid blue; padding: 1em; background-color: white;">
 <p style="text-align: center; font-weight: bold; font-size: 125%;">
 The Patrick Henry Project</p>
 <table>
@@ -83,7 +93,9 @@ function left_column() {
 
 function content() {
   global $page, $cmd;
+  //  echo "<pre>"; print_r($_REQUEST); echo "</pre>\n";
   if ($cmd == 'post') dopost();
+  elseif ($cmd == 'finishpost') finishpost();
   elseif ($cmd == 'edit') doedit();
   elseif ($page == 'videos') videos();
   elseif ($page == 'post') post();
@@ -92,20 +104,24 @@ function content() {
 }
 
 function dopost() {
-   global $youtube, $name, $email, $url, $password, $verify;
+   global $youtube, $video, $name, $email, $url, $password, $verify;
    global $input, $time, $hash;
-   global $datadb, $infodb, $cap;
+   global $datadb, $infodb, $cap, $keepcap;
 
+   // Validate captcha
+   $keepcap = FALSE;
    if (!$cap->verify($input, $time, $hash, getscrambler())) {
      return post('Wrong answer to simple arithmetic problem');
    }
+   $keepcap = TRUE;
 
+   // validate YouTube URL
    $yt = parse_url($youtube);
    $host = @$yt['host'];
    if ($host=='youtube.com' || $host=='www.youtube.com') {
      $query = $yt['query'];
      $pos = strpos($query, 'v=');
-     if ($pos === 0) $video = substr($query, 2);
+     if ($pos==0 && !($pos===FALSE)) $video = substr($query, 2);
      else {
        $pos = strpos($query, '&v=');
        if ($pos === FALSE) return post('Malformed URL');
@@ -119,9 +135,73 @@ function dopost() {
    } else {
      return post('Malformed URL');
    }
+
+   // Validate email and password
+   if ($email) {
+     if (!$password) return post('Password required with email');
+     if ($password != $verify) return post('Passwords do not match');
+   }
+
+   if ($url && strpos($url, "http://")===FALSE && strpos($url, "https://")===FALSE) {
+     $url = "http://$url";      // Probably right, but make user verify
+     return post('Prefixed Web Site with "http://". Verify and resubmit.');
+   }
+
+   displayPost();
+}
+
+function displayPost() {
+   global $youtube, $video, $name, $email, $url, $password, $verify;
+   global $string, $input, $time, $hash;
+
 ?>
-<p>Submission doesn't work yet.</p>
+<center>
+<p>
+<iframe width="560" height="315" src="<?php echo "http://www.youtube.com/embed/$video"; ?>" frameborder="0" allowfullscreen></iframe></p>
+<a href="<?php echo "http://youtu.be/$video"; ?>">
+<?php echo "youtu.be/$video"; ?></a><br/>
+<?php if ($url) {
+  echo "<a href='$url'>";
+  if ($name) echo hsc($name);
+  else echo hsc($url);
+  echo "</a>\n";
+} elseif ($name) echo hsc($name);
+?>
+<form method='post' action='./'>
+<input type='hidden' name='cmd' value='finishpost'/>
+<input type='hidden' name='string' value='<?php echo $string; ?>'/>
+<input type='hidden' name='input' value='<?php echo $input; ?>'/>
+<input type='hidden' name='time' value='<?php echo $time; ?>'/>
+<input type='hidden' name='hash' value='<?php echo $hash; ?>'/>
+<input type='hidden' name='youtube' value='<?php echo hsc($youtube); ?>'/>
+<input type='hidden' name='video' value='<?php echo hsc($video); ?>'/>
+<input type='hidden' name='email' value='<?php echo hsc($email); ?>'/>
+<input type='hidden' name='password' value='<?php echo hsc($password); ?>'/>
+<input type='hidden' name='name' value='<?php echo hsc($name); ?>'/>
+<input type='hidden' name='url' value='<?php echo hsc($url); ?>'/>
+<br/>
+<input type='submit' name='submit' value='Post'/>
+<input type='submit' name='edit' value='Edit'/>
+</form>
+</center>
+<p>
+Click the "Post" button to verify your video and information. Click on the "Edit" button to change something before posting.
+</p>
 <?php
+}
+
+function finishpost() {
+   global $youtube, $video, $name, $email, $url, $password, $verify;
+   global $keepcap, $string, $input, $time, $hash;
+   global $submit, $edit;
+
+   if ($edit) {
+     $keepcap = TRUE;
+     $verify = $password;
+     post();
+   } else {
+     echo "Posting not finished";
+   }
 }
 
 function doedit() {
@@ -132,18 +212,21 @@ function doedit() {
 
 function post($error=null) {
   global $youtube, $name, $url, $email, $password, $verify;
-  global $cap, $rand;
+  global $cap, $keepcap, $rand;
 
-  $gen = $cap->generate(getscrambler());
+  $gen = gencap();
   $string = $gen['string'];
   $time = $gen['time'];
   $hash = $gen['hash'];
+  $input = '';
+  if ($keepcap) $input = $gen['input'];
 ?>
 <p>
 <form method='post' action='./'>
 <input type='hidden' name='cmd' value='post'/>
-<input type='hidden' name='time' value='<?php echo $time; ?>'>
-<input type='hidden' name='hash' value='<?php echo $hash; ?>'>
+<input type='hidden' name='string' value='<?php echo $string; ?>'/>
+<input type='hidden' name='time' value='<?php echo $time; ?>'/>
+<input type='hidden' name='hash' value='<?php echo $hash; ?>'/>
 <table>
 <tr>
 <td></td>
@@ -153,10 +236,10 @@ function post($error=null) {
 <td style="color: blue;">Required</td>
 </tr><tr>
 <td>YouTube Video:</td>
-<td><input type='text' name='youtube' size='40' value='<?php echo $youtube; ?>'/></td>
+<td><input type='text' name='youtube' id='youtube' size='40' value='<?php echo $youtube; ?>'/></td>
 </tr><tr>
 <td style='text-align: right;'><?php echo $string; ?> =</td>
-<td><input type='text' name='input' size='2'/></td>
+<td><input type='text' name='input' size='2' value='<?php echo $input; ?>'/></td>
 </tr><tr>
 <td></td>
 <td style="color: blue;">Fill in if you want to be able to edit or delete your post</td>
@@ -165,19 +248,19 @@ function post($error=null) {
 <td><input type='text' name='email' size='40' value='<?php echo $email; ?>'/></td>
 </tr><tr>
 <td style="text-align: right;">Password:</td>
-<td><input type='password' name='password' size='20' value='<?php echo $password; ?>'/></td>
+<td><input type='password' name='password' size='20' value='<?php echo hsc($password); ?>'/></td>
 </tr><tr>
 <td style="text-align: right;">Password Again:</td>
-<td><input type='password' name='verify' size='20' value='<?php echo $verify; ?>'/></td>
+<td><input type='password' name='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
 </tr><tr>
 <td></td>
 <td style="color: blue;">Optional</td>
 </tr><tr>
 <td style="text-align: right;">Name:</td>
-<td><input type='text' name='name' size='40' value='<?php echo $name; ?>'/></td>
+<td><input type='text' name='name' size='40' value='<?php echo hsc($name); ?>'/></td>
 </tr><tr>
 <td style="text-align: right;">Web Site:</td>
-<td><input type='text' name='url' size='40' value='<?php echo $url; ?>'/></td>
+<td><input type='text' name='url' size='40' value='<?php echo hsc($url); ?>'/></td>
 </tr><tr>
 <td></td>
 <td><input type='submit' name='submit' value='Submit'/></td>
@@ -201,7 +284,7 @@ or:
 If you want to be able to edit your name and URL, or change or delete your video, you need to enter your "Email" address and a "Password". This site stores only a cryptographic hash of your email, not the email itself, so it will be impossible for us to send you emails unless you tell us your email again if you forget your password.
 </p>
 <p>
-If you want a "Name" and/or "Web Site" to be associated with your video, enter those fields, and that will show up in your entry on the Videos pages.
+If you want a "Name" and/or "Web Site" to be associated with your video, enter those fields, and that will show up in your entry on the Videos pages. The "Web Site" address must begin with "http://" or "https://".
 </p>
 <?php
 }
@@ -210,7 +293,7 @@ function edit() {
   global $email, $password, $newpass, $verify;
   global $cap, $rand;
 
-  $gen = $cap->generate(getscrambler());
+  $gen = gencap();
   $string = $gen['string'];
   $time = $gen['time'];
   $hash = $gen['hash'];
@@ -232,16 +315,16 @@ function edit() {
 <td style="color: blue;">Required for "Lookup" and "Change Password"</td>
 </tr><tr>
 <td style="text-align: right;">Password:</td>
-<td><input type='password' name='password' size='20' value='<?php echo $password; ?>'/></td>
+<td><input type='password' name='password' size='20' value='<?php echo hsc($password); ?>'/></td>
 </tr><tr>
 <td></td>
 <td style="color: blue;">Required for "Change Password"</td>
 </tr><tr>
 <td style="text-align: right;">New Password:</td>
-<td><input type='password' name='newpass' size='20' value='<?php echo $newpass; ?>'/></td>
+<td><input type='password' name='newpass' size='20' value='<?php echo hsc($newpass); ?>'/></td>
 </tr><tr>
 <td style="text-align: right;">Again:</td>
-<td><input type='password' name='verify' size='20' value='<?php echo $verify; ?>'/></td>
+<td><input type='password' name='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
 </tr><tr>
 <td></td>
 <td style="color: blue;">Required for "Forgot Password"</td>
@@ -269,6 +352,12 @@ function videos() {
 ?>
 <p>Videos will go here</p>
 <?php
+}
+
+function gencap() {
+  global $cap, $keepcap, $string, $time, $hash, $input;
+  if ($keepcap) return $cap->newtime($string, $input, getscrambler());
+  return $cap->generate(getscrambler());
 }
 
 function getscrambler() {
