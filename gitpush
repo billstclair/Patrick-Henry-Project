@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# git remote add origin git+ssh://$PGP/home/private/php.git
+# git remote add github git@github.com:billstclair/Patrick-Henry-Project.git
+git push origin master
+git push github master
