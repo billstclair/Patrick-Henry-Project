@@ -1,0 +1,6 @@
+This is the web server for http://patrickhenryproject.org/
+
+The Patrick Henry Project is an idea proposed by Ann Barnhardt (http://barnhardt.biz/), her response to the actions of the Obama Administration. She posted on YouTube a recitation of Patrick Henry's famous "Give me liberty or give me death" speech and invited others to post their own. Western Rifle Shooters publicized her invitation (https://westernrifleshooters.wordpress.com/2012/01/25/barnhardt-the-patrick-henry-project/). This web server enables collection of those videos in one place.
+
+The code should be fairly easily adaptable for collecting videos on other topics. If you do so, and if you pull out the topic-specific stuff and make it generic, I'm open to pull requests.
+
