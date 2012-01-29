@@ -53,63 +53,63 @@ $onloadid = NULL;
 
 ?>
 <html>
-<head>
-<title>The Patrick Henry Project</title>
-<script type="text/javascript">
-  var onloadid = null;
-  function doonload() {
-    if (onloadid) document.getElementById(onloadid).focus();
-  }
-</script>
-</head>
-<body background='background.png' onload='doonload();'>
-<div style="width: 60em; margin: 4em auto 4em auto; border: 1px solid blue; padding: 1em; background-color: white;">
-<p style="text-align: center; font-weight: bold; font-size: 125%;">
-The Patrick Henry Project</p>
-<table>
-<tr>
-<td valign="top">
-<div>
+  <head>
+    <title>The Patrick Henry Project</title>
+    <script type="text/javascript">
+      var onloadid = null;
+      function doonload() {
+        if (onloadid) document.getElementById(onloadid).focus();
+      }
+    </script>
+  </head>
+  <body background='background.png' onload='doonload();'>
+    <div style="width: 60em; margin: 4em auto 4em auto; border: 1px solid blue; padding: 1em; background-color: white;">
+      <p style="text-align: center; font-weight: bold; font-size: 125%;">
+        The Patrick Henry Project</p>
+      <table>
+        <tr>
+          <td valign="top">
+            <div>
 <?php left_column(); ?>
-</div>
-</td>
-<td valign="top">
-<div style="margin-left: 2em;">
+            </div>
+          </td>
+          <td valign="top">
+            <div style="margin-left: 2em;">
 <?php content(); ?>
-</div>
-</td>
-</tr>
-</table>
-<p style="text-align:center; font-size: 80%;">
-Copyright &copy 2012 Bill St. Clair &lt;bill at billstclair dot com>
-</p>
-<div style="text-align: center">
-<p style="font-size: 80%">
-Donations support this site and <a href="http://freedomoutlaws.com/">FreedomOutlaws.com</a>
-</p>
+            </div>
+          </td>
+        </tr>
+      </table>
+      <p style="text-align:center; font-size: 80%;">
+        Copyright &copy 2012 Bill St. Clair &lt;bill at billstclair dot com>
+      </p>
+      <div style="text-align: center">
+        <p style="font-size: 80%">
+          Donations support this site and <a href="http://freedomoutlaws.com/">FreedomOutlaws.com</a>
+        </p>
 <?php require "paypal.inc"; ?>
-</div>
-</div>
+      </div>
+    </div>
 <?php if ($onloadid) {
 ?>
-<script type="text/javascript">
-  onloadid = '<?php echo $onloadid; ?>';
-</script>
+    <script type="text/javascript">
+      onloadid = '<?php echo $onloadid; ?>';
+    </script>
 <?php
 }
 ?>
-</body>
+  </body>
 </html>
 <?php
 
 function left_column() {
 ?>
-<p>
-<a href="./">Home</a><br/>
-<a href="./?page=post">Post&nbsp;Your&nbsp;Video</a><br/>
-<a href="./?page=edit">Edit&nbsp;Your&nbsp;Video</a><br/>
-<a href="./?page=videos">Videos</a><br/>
-</p>
+              <p>
+                <a href="./">Home</a><br/>
+                <a href="./?page=post">Post&nbsp;Your&nbsp;Video</a><br/>
+                <a href="./?page=edit">Edit&nbsp;Your&nbsp;Video</a><br/>
+                <a href="./?page=videos">Videos</a><br/>
+              </p>
 <?php
 }
 
@@ -191,38 +191,38 @@ function displayPost() {
    global $string, $input, $time, $hash;
 
 ?>
-<center>
-<p>
-<iframe width="560" height="315" src="<?php echo "http://www.youtube.com/embed/$video"; ?>" frameborder="0" allowfullscreen></iframe></p>
-<a href="<?php echo "http://youtu.be/$video"; ?>">
-<?php echo "youtu.be/$video"; ?></a><br/>
-<?php if ($url) {
+              <center>
+                <p>
+                  <iframe width="560" height="315" src="<?php echo "http://www.youtube.com/embed/$video"; ?>" frameborder="0" allowfullscreen></iframe></p>
+                <a href="<?php echo "http://youtu.be/$video"; ?>">
+                  <?php echo "youtu.be/$video"; ?></a><br/>
+                <?php if ($url) {
   echo "<a href='$url'>";
   if ($name) echo hsc($name);
   else echo hsc($url);
   echo "</a>\n";
 } elseif ($name) echo hsc($name);
 ?>
-<form method='post' action='./'>
-<input type='hidden' name='cmd' value='finishpost'/>
-<input type='hidden' name='string' value='<?php echo $string; ?>'/>
-<input type='hidden' name='input' value='<?php echo $input; ?>'/>
-<input type='hidden' name='time' value='<?php echo $time; ?>'/>
-<input type='hidden' name='hash' value='<?php echo $hash; ?>'/>
-<input type='hidden' name='youtube' value='<?php echo hsc($youtube); ?>'/>
-<input type='hidden' name='video' value='<?php echo hsc($video); ?>'/>
-<input type='hidden' name='email' value='<?php echo hsc($email); ?>'/>
-<input type='hidden' name='password' value='<?php echo hsc($password); ?>'/>
-<input type='hidden' name='name' value='<?php echo hsc($name); ?>'/>
-<input type='hidden' name='url' value='<?php echo hsc($url); ?>'/>
-<br/>
-<input type='submit' name='submit' value='Post'/>
-<input type='submit' name='edit' value='Edit'/>
-</form>
-</center>
-<p>
-Click the "Post" button to verify your video and information. Click on the "Edit" button to change something before posting.
-</p>
+                <form method='post' action='./'>
+                  <input type='hidden' name='cmd' value='finishpost'/>
+                  <input type='hidden' name='string' value='<?php echo $string; ?>'/>
+                  <input type='hidden' name='input' value='<?php echo $input; ?>'/>
+                  <input type='hidden' name='time' value='<?php echo $time; ?>'/>
+                  <input type='hidden' name='hash' value='<?php echo $hash; ?>'/>
+                  <input type='hidden' name='youtube' value='<?php echo hsc($youtube); ?>'/>
+                  <input type='hidden' name='video' value='<?php echo hsc($video); ?>'/>
+                  <input type='hidden' name='email' value='<?php echo hsc($email); ?>'/>
+                  <input type='hidden' name='password' value='<?php echo hsc($password); ?>'/>
+                  <input type='hidden' name='name' value='<?php echo hsc($name); ?>'/>
+                  <input type='hidden' name='url' value='<?php echo hsc($url); ?>'/>
+                  <br/>
+                  <input type='submit' name='submit' value='Post'/>
+                  <input type='submit' name='edit' value='Edit'/>
+                </form>
+              </center>
+              <p>
+                Click the "Post" button to verify your video and information. Click on the "Edit" button to change something before posting.
+              </p>
 <?php
 }
 
@@ -264,74 +264,74 @@ function post($error=null) {
   $input = '';
   if ($keepcap) $input = $gen['input'];
 ?>
-<p>
-Use this form to submit or change your video. Videos should be recitations of Patrick Henry's speech, ending with "Give me liberty or give me death!" If you want to use just the end of the speech, instead of the whole thing, that's OK, but videos of anything other than the speech will not be approved.
-</p>
-<p>
-This site saves only a cryptographic hash of your email address. That allows us to recognize your email when you type it again, but does not allow anybody, even the site adminstrators, to get your email address. It IS possible for somebody to check if your email address is in the database, but to do that, they have to know it. You will receive a confirmation email from the site. If that's a problem for you, don't post a video here.
-</p>
-<p>
-<form method='post' action='./'>
-<input type='hidden' name='cmd' value='post'/>
-<input type='hidden' name='string' value='<?php echo $string; ?>'/>
-<input type='hidden' name='time' value='<?php echo $time; ?>'/>
-<input type='hidden' name='hash' value='<?php echo $hash; ?>'/>
-<table>
-<tr>
-<td></td>
-<td><span style='color: red;'><?php echo $error; ?></span></td>
-</tr><tr>
-<td></td>
-<td style="color: blue;">Required</td>
-</tr><tr>
-<td>YouTube Video:</td>
-<td><input type='text' name='youtube' id='youtube' size='40' value='<?php echo $youtube; ?>'/></td>
-</tr><tr>
-<td style='text-align: right;'><?php echo $string; ?> =</td>
-<td><input type='text' name='input' id='input' size='2' value='<?php echo $input; ?>'/></td>
-</tr><tr>
-<td style="text-align: right;">Email:</td>
-<td><input type='text' name='email' id='email' size='40' value='<?php echo $email; ?>'/></td>
-</tr><tr>
-<td style="text-align: right;">Password:</td>
-<td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
-</tr><tr>
-<td style="text-align: right;">Password Again:</td>
-<td><input type='password' name='verify' id='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
-</tr><tr>
-<td></td>
-<td style="color: blue;">Optional</td>
-</tr><tr>
-<td style="text-align: right;">Name:</td>
-<td><input type='text' name='name' id='name' size='40' value='<?php echo hsc($name); ?>'/></td>
-</tr><tr>
-<td style="text-align: right;">Web Site:</td>
-<td><input type='text' name='url' id='url' size='40' value='<?php echo hsc($url); ?>'/></td>
-</tr><tr>
-<td></td>
-<td><input type='submit' name='submit' value='Submit'/></td>
-</tr>
-</table>
-</form>
-</p>
-<p>
-Fill in the fields in the "Required" section. For "Youtube Video", copy the address from your browser's address bar, or from YouTube's "Share" pop-up, and paste it here. It should look something like one of these two examples::
-</p>
-<p style='margin-left: 2em;'>
-<code>http://www.youtube.com/watch?v=Cup9CgSjr9g</code><br/>
-<code>http://youtu.be/Cup9CgSjr9g</code>
-</p>
-<p>
-Enter the answer to the simple arithmetic problem. This reduces spam submissions.
-</p>
-<p>
-Enter your "Email" address, a "Password", and the "Password Again". If this is a change to an existing entry, you can leave the "Password Again" field blank.
-</p>
-<p>
-If you want a "Name" and/or "Web Site" to be associated with your video, enter those fields, and that will show up in your entry on the Videos pages. The "Web Site" address must begin with "http://" or "https://".
-</p>
-<p>
-Finally, press the "Submit" button.
+              <p>
+                Use this form to submit or change your video. Videos should be recitations of Patrick Henry's speech, ending with "Give me liberty or give me death!" If you want to use just the end of the speech, instead of the whole thing, that's OK, but videos of anything other than the speech will not be approved.
+              </p>
+              <p>
+                This site saves only a cryptographic hash of your email address. That allows us to recognize your email when you type it again, but does not allow anybody, even the site adminstrators, to get your email address. It IS possible for somebody to check if your email address is in the database, but to do that, they have to know it. You will receive a confirmation email from the site. If that's a problem for you, don't post a video here.
+              </p>
+              <p>
+                <form method='post' action='./'>
+                  <input type='hidden' name='cmd' value='post'/>
+                  <input type='hidden' name='string' value='<?php echo $string; ?>'/>
+                  <input type='hidden' name='time' value='<?php echo $time; ?>'/>
+                  <input type='hidden' name='hash' value='<?php echo $hash; ?>'/>
+                  <table>
+                    <tr>
+                      <td></td>
+                      <td><span style='color: red;'><?php echo $error; ?></span></td>
+                    </tr><tr>
+                      <td></td>
+                      <td style="color: blue;">Required</td>
+                    </tr><tr>
+                      <td>YouTube Video:</td>
+                      <td><input type='text' name='youtube' id='youtube' size='40' value='<?php echo $youtube; ?>'/></td>
+                    </tr><tr>
+                      <td style='text-align: right;'><?php echo $string; ?> =</td>
+                      <td><input type='text' name='input' id='input' size='2' value='<?php echo $input; ?>'/></td>
+                    </tr><tr>
+                      <td style="text-align: right;">Email:</td>
+                      <td><input type='text' name='email' id='email' size='40' value='<?php echo $email; ?>'/></td>
+                    </tr><tr>
+                      <td style="text-align: right;">Password:</td>
+                      <td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
+                    </tr><tr>
+                      <td style="text-align: right;">Password Again:</td>
+                      <td><input type='password' name='verify' id='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
+                    </tr><tr>
+                      <td></td>
+                      <td style="color: blue;">Optional</td>
+                    </tr><tr>
+                      <td style="text-align: right;">Name:</td>
+                      <td><input type='text' name='name' id='name' size='40' value='<?php echo hsc($name); ?>'/></td>
+                    </tr><tr>
+                      <td style="text-align: right;">Web Site:</td>
+                      <td><input type='text' name='url' id='url' size='40' value='<?php echo hsc($url); ?>'/></td>
+                    </tr><tr>
+                      <td></td>
+                      <td><input type='submit' name='submit' value='Submit'/></td>
+                    </tr>
+                  </table>
+                </form>
+              </p>
+              <p>
+                Fill in the fields in the "Required" section. For "Youtube Video", copy the address from your browser's address bar, or from YouTube's "Share" pop-up, and paste it here. It should look something like one of these two examples::
+              </p>
+              <p style='margin-left: 2em;'>
+                <code>http://www.youtube.com/watch?v=Cup9CgSjr9g</code><br/>
+                <code>http://youtu.be/Cup9CgSjr9g</code>
+              </p>
+              <p>
+                Enter the answer to the simple arithmetic problem. This reduces spam submissions.
+              </p>
+              <p>
+                Enter your "Email" address, a "Password", and the "Password Again". If this is a change to an existing entry, you can leave the "Password Again" field blank.
+              </p>
+              <p>
+                If you want a "Name" and/or "Web Site" to be associated with your video, enter those fields, and that will show up in your entry on the Videos pages. The "Web Site" address must begin with "http://" or "https://".
+              </p>
+              <p>
+                Finally, press the "Submit" button.
 <?php
 }
 
@@ -346,53 +346,53 @@ function edit() {
   $time = $gen['time'];
   $hash = $gen['hash'];
 ?>
-<form method='post' action='./'>
-<input type='hidden' name='cmd' value='edit'/>
-<input type='hidden' name='time' value='<?php echo $time; ?>'>
-<input type='hidden' name='hash' value='<?php echo $hash; ?>'>
-<p>
-<table>
-<tr>
-<td></td>
-<td style="color: blue;">Required</td>
-</tr><tr>
-<td style="text-align: right;">Email:</td>
-<td><input type='text' name='email' id='email' size='40' value='<?php echo $email; ?>'/></td>
-</tr><tr>
-<td></td>
-<td style="color: blue;">Required for "Lookup" and "Change Password"</td>
-</tr><tr>
-<td style="text-align: right;">Password:</td>
-<td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
-</tr><tr>
-<td></td>
-<td style="color: blue;">Required for "Change Password"</td>
-</tr><tr>
-<td style="text-align: right;">New Password:</td>
-<td><input type='password' name='newpass' id='newpass' size='20' value='<?php echo hsc($newpass); ?>'/></td>
-</tr><tr>
-<td style="text-align: right;">Again:</td>
-<td><input type='password' name='verify' id='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
-</tr><tr>
-<td></td>
-<td style="color: blue;">Required for "Forgot Password"</td>
-</tr><tr>
-<td style='text-align: right;'><?php echo $string; ?> =</td>
-<td><input type='text' name='input' size='2'/></td>
-</tr><tr>
-<td></td>
-<td>
-  <input type='submit' name='submit' value='Lookup'/>
-  <input type='submit' name='changepass' value='Change Password'/>
-  <input type='submit' name='forgot' value='Forgot Password'/>
-</td>
-</tr>
-</table>
-</p>
-<p>
-To look up your video, enter your "Email" address and your "Password", and click the "Lookup" button. To change your password, enter your "Email" address, your old "Password", the "New Password" and the new password "Again", and click the "Change Password" button. If you've forgotten your password, enter your "Email" address and the answer to the simple arithmetic problem, click the "Forgot Password" button, and a link will be sent to you allowing you to enter a new password.
-</p>
-</form>
+              <form method='post' action='./'>
+                <input type='hidden' name='cmd' value='edit'/>
+                <input type='hidden' name='time' value='<?php echo $time; ?>'>
+                <input type='hidden' name='hash' value='<?php echo $hash; ?>'>
+                <p>
+                  <table>
+                    <tr>
+                      <td></td>
+                      <td style="color: blue;">Required</td>
+                    </tr><tr>
+                      <td style="text-align: right;">Email:</td>
+                      <td><input type='text' name='email' id='email' size='40' value='<?php echo $email; ?>'/></td>
+                    </tr><tr>
+                      <td></td>
+                      <td style="color: blue;">Required for "Lookup" and "Change Password"</td>
+                    </tr><tr>
+                      <td style="text-align: right;">Password:</td>
+                      <td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
+                    </tr><tr>
+                      <td></td>
+                      <td style="color: blue;">Required for "Change Password"</td>
+                    </tr><tr>
+                      <td style="text-align: right;">New Password:</td>
+                      <td><input type='password' name='newpass' id='newpass' size='20' value='<?php echo hsc($newpass); ?>'/></td>
+                    </tr><tr>
+                      <td style="text-align: right;">Again:</td>
+                      <td><input type='password' name='verify' id='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
+                    </tr><tr>
+                      <td></td>
+                      <td style="color: blue;">Required for "Forgot Password"</td>
+                    </tr><tr>
+                      <td style='text-align: right;'><?php echo $string; ?> =</td>
+                      <td><input type='text' name='input' size='2'/></td>
+                    </tr><tr>
+                      <td></td>
+                      <td>
+                        <input type='submit' name='submit' value='Lookup'/>
+                        <input type='submit' name='changepass' value='Change Password'/>
+                        <input type='submit' name='forgot' value='Forgot Password'/>
+                      </td>
+                    </tr>
+                  </table>
+                </p>
+                <p>
+                  To look up your video, enter your "Email" address and your "Password", and click the "Lookup" button. To change your password, enter your "Email" address, your old "Password", the "New Password" and the new password "Again", and click the "Change Password" button. If you've forgotten your password, enter your "Email" address and the answer to the simple arithmetic problem, click the "Forgot Password" button, and a link will be sent to you allowing you to enter a new password.
+                </p>
+              </form>
 <?php
 }
 

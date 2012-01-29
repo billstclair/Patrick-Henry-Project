@@ -22,9 +22,13 @@ If you think it an idea with potential, run with it.
 </p><p>
 Ann
 </p></blockquote>
+<p>
+And here's her video:
+</p>
 <p style="text-align: center;">
 <iframe width="560" height="315" src="http://www.youtube.com/embed/Cup9CgSjr9g" frameborder="0" allowfullscreen></iframe><br/>
-<a href="http://youtu.be/Cup9CgSjr9g">youtu.be/Cup9CgSjr9g</a>
+<a href="http://youtu.be/Cup9CgSjr9g">youtu.be/Cup9CgSjr9g</a><br/>
+<a href="http://barnhardt.biz/">Ann Barnhardt</a>
 </p><p>
 Speech given by Patrick Henry at<br/>
 St. John's Church, Richmond, Virginia</br>
