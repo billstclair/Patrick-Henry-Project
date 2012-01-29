@@ -5,7 +5,7 @@ The Patrick Henry Project is an idea proposed by
 publicized her invitation</a>. This site enables collection of those videos in one place.
 </p>
 <p>
-To post your video, click "Post Your Video" in the left column. To change a post you made earlier, or to change your password or recover a lost password, click "Edit Your Video". To view other videos, click on one of the "Videos" links.
+To post your video, click "Post Your Video" in the left column. To change a post you made earlier, or to change your password or recover a lost password, click "Edit Your Video". To view other videos, click on the "Videos" link.
 </p>
 <p>
 This site does not save access logs. The only information it saves about you is what you submit on the "Post Your Video" page.
@@ -22,8 +22,9 @@ If you think it an idea with potential, run with it.
 </p><p>
 Ann
 </p></blockquote>
-<p>
-<iframe width="560" height="315" src="http://www.youtube.com/embed/Cup9CgSjr9g" frameborder="0" allowfullscreen></iframe>
+<p style="text-align: center;">
+<iframe width="560" height="315" src="http://www.youtube.com/embed/Cup9CgSjr9g" frameborder="0" allowfullscreen></iframe><br/>
+<a href="http://youtu.be/Cup9CgSjr9g">youtu.be/Cup9CgSjr9g</a>
 </p><p>
 Speech given by Patrick Henry at<br/>
 St. John's Church, Richmond, Virginia</br>

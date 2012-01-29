@@ -15,6 +15,9 @@ function hsc($x) {
   return htmlspecialchars($x);
 }
 
+// During development
+$default_error = "Play as you will, but posts are not yet persistent";
+
 // Read-only page display
 $page = mqreq('page');
 
@@ -137,10 +140,9 @@ function dopost() {
    }
 
    // Validate email and password
-   if ($email) {
-     if (!$password) return post('Password required with email');
-     if ($password != $verify) return post('Passwords do not match');
-   }
+   if (!$email) return post('Email address is required');
+   if (!$password) return post('Password is required');
+   if ($password != $verify) return post('Passwords do not match');
 
    if ($url && strpos($url, "http://")===FALSE && strpos($url, "https://")===FALSE) {
      $url = "http://$url";      // Probably right, but make user verify
@@ -191,7 +193,7 @@ Click the "Post" button to verify your video and information. Click on the "Edit
 }
 
 function finishpost() {
-   global $youtube, $video, $name, $email, $url, $password, $verify;
+   global $youtube, $video, $email, $password, $verify, $name, $url;
    global $keepcap, $string, $input, $time, $hash;
    global $submit, $edit;
 
@@ -200,7 +202,11 @@ function finishpost() {
      $verify = $password;
      post();
    } else {
-     echo "Posting not finished";
+     $reginfo = array('video' => $video,
+                      'email' => $email,
+                      'password' => $password);
+     if ($name) $reginfo['name'] = $name;
+     if ($url) $reginfo['url'] = $url;
    }
 }
 
@@ -212,7 +218,9 @@ function doedit() {
 
 function post($error=null) {
   global $youtube, $name, $url, $email, $password, $verify;
-  global $cap, $keepcap, $rand;
+  global $cap, $keepcap, $rand, $default_error;
+
+  if (!$error) $error = $default_error;
 
   $gen = gencap();
   $string = $gen['string'];
@@ -221,6 +229,12 @@ function post($error=null) {
   $input = '';
   if ($keepcap) $input = $gen['input'];
 ?>
+<p>
+Use this form to submit or change your video. Videos should be recitations of Patrick Henry's speech, ending with "Give me liberty or give me death!" If you want to use just the end of the speech, instead of the whole thing, that's OK, but videos of anything other than the speech will not be approved.
+</p>
+<p>
+This site saves only a cryptographic hash of your email address. That allows us to recognize your email when you type it again, but does not allow anybody, even the site adminstrators, to get your email address. It IS possible for somebody to check if your email address is in the database, but to do that, they have to know it. You will receive a confirmation email from the site. If that's a problem for you, don't post a video here.
+</p>
 <p>
 <form method='post' action='./'>
 <input type='hidden' name='cmd' value='post'/>
@@ -240,9 +254,6 @@ function post($error=null) {
 </tr><tr>
 <td style='text-align: right;'><?php echo $string; ?> =</td>
 <td><input type='text' name='input' size='2' value='<?php echo $input; ?>'/></td>
-</tr><tr>
-<td></td>
-<td style="color: blue;">Fill in if you want to be able to edit or delete your post</td>
 </tr><tr>
 <td style="text-align: right;">Email:</td>
 <td><input type='text' name='email' size='40' value='<?php echo $email; ?>'/></td>
@@ -269,23 +280,23 @@ function post($error=null) {
 </form>
 </p>
 <p>
-The only fields required above are the "YouTube Video" field and the answer to the simple arithmetic problem. For "Youtube Video", copy the address from your browser's address bar, or from YouTube's "Share" pop-up, and paste it here. It should look something like:
+Fill in the fields in the "Required" section. For "Youtube Video", copy the address from your browser's address bar, or from YouTube's "Share" pop-up, and paste it here. It should look something like one of these two examples::
 </p>
 <p style='margin-left: 2em;'>
-<code>http://www.youtube.com/watch?v=Cup9CgSjr9g</code>
-</p>
-<p>
-or:
-</p>
-<p style='margin-left: 2em;'>
+<code>http://www.youtube.com/watch?v=Cup9CgSjr9g</code><br/>
 <code>http://youtu.be/Cup9CgSjr9g</code>
 </p>
 <p>
-If you want to be able to edit your name and URL, or change or delete your video, you need to enter your "Email" address and a "Password". This site stores only a cryptographic hash of your email, not the email itself, so it will be impossible for us to send you emails unless you tell us your email again if you forget your password.
+Enter the answer to the simple arithmetic problem. This reduces spam submissions.
+</p>
+<p>
+Enter your "Email" address, a "Password", and the "Password Again". If this is a change to an existing entry, you can leave the "Password Again" field blank.
 </p>
 <p>
 If you want a "Name" and/or "Web Site" to be associated with your video, enter those fields, and that will show up in your entry on the Videos pages. The "Web Site" address must begin with "http://" or "https://".
 </p>
+<p>
+Finally, press the "Submit" button.
 <?php
 }
 

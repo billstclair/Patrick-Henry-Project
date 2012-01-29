@@ -18,7 +18,7 @@ class Mathcap {
 
   function newtime($str, $input, $scrambler) {
     $time = time();
-    $hash = sha1($input + $time + $scrambler);
+    $hash = sha1("$input$time$scrambler");
     $res = array('string' => $str, 'input' => $input,
                  'time' => $time, 'hash' => $hash);
     return $res;
@@ -31,7 +31,7 @@ class Mathcap {
 
     // echo "input: $input, time: $time, hash: $hash<br>\n";
     // echo "Calculated hash: " . sha1($input ^ $time ^ $captcha_scrambler) . "<br>\n";
-    return sha1($input + $time + $scrambler) == $hash;
+    return sha1("$input$time$scrambler") == $hash;
   }
 
 }
