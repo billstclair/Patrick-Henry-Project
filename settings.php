@@ -1,3 +1,4 @@
 <?php
-$datadir = "../protected/patrickhenry";
-$infodir = "$datadir/info";
+$datadir = '../protected/patrickhenry';
+$infodir = '$datadir/info';
+$scrambler_file = 'scrambler.txt';

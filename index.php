@@ -65,13 +65,7 @@ Copyright &copy 2012 Bill St. Clair &lt;bill at billstclair dot com>
 <p style="font-size: 80%">
 Donations support this site and <a href="http://freedomoutlaws.com/">FreedomOutlaws.com</a>
 </p>
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-<input type="hidden" name="cmd" value="_s-xclick">
-<input type="image" src="btn_donate_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-<img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1">
-<input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----
-">
-</form>
+<?php require "paypal.inc"; ?>
 </div>
 </div>
 </html>
@@ -88,25 +82,59 @@ function left_column() {
 }
 
 function content() {
-  global $page, $submit;
-  if ($submit) submit();
+  global $page, $cmd;
+  if ($cmd == 'post') dopost();
+  elseif ($cmd == 'edit') doedit();
   elseif ($page == 'videos') videos();
   elseif ($page == 'post') post();
   elseif ($page == 'edit') edit();
   else require "index.inc";
 }
 
-function submit() {
+function dopost() {
+   global $youtube, $name, $email, $url, $password, $verify;
+   global $input, $time, $hash;
+   global $datadb, $infodb, $cap;
+
+   if (!$cap->verify($input, $time, $hash, getscrambler())) {
+     return post('Wrong answer to simple arithmetic problem');
+   }
+
+   $yt = parse_url($youtube);
+   $host = @$yt['host'];
+   if ($host=='youtube.com' || $host=='www.youtube.com') {
+     $query = $yt['query'];
+     $pos = strpos($query, 'v=');
+     if ($pos === 0) $video = substr($query, 2);
+     else {
+       $pos = strpos($query, '&v=');
+       if ($pos === FALSE) return post('Malformed URL');
+       $video = substr($query, $pos+3);
+     }
+     $pos = strpos($video, '&');
+     if (!($pos === false)) $video = substr($video, 0, $pos);
+   } elseif ($host == 'youtu.be') {
+     $video = @$yt['path'];
+     if (strlen($video) > 0) $video = substr($video, 1);
+   } else {
+     return post('Malformed URL');
+   }
 ?>
 <p>Submission doesn't work yet.</p>
 <?php
 }
 
-function post() {
+function doedit() {
+?>
+<p>Editing videos doesn't work yet.</p>
+<?php
+}
+
+function post($error=null) {
   global $youtube, $name, $url, $email, $password, $verify;
   global $cap, $rand;
 
-  $gen = $cap->generate(sha1($rand->urandom_bytes(20)));
+  $gen = $cap->generate(getscrambler());
   $string = $gen['string'];
   $time = $gen['time'];
   $hash = $gen['hash'];
@@ -119,7 +147,10 @@ function post() {
 <table>
 <tr>
 <td></td>
-<td style="color: red;">Required</td>
+<td><span style='color: red;'><?php echo $error; ?></span></td>
+</tr><tr>
+<td></td>
+<td style="color: blue;">Required</td>
 </tr><tr>
 <td>YouTube Video:</td>
 <td><input type='text' name='youtube' size='40' value='<?php echo $youtube; ?>'/></td>
@@ -128,7 +159,7 @@ function post() {
 <td><input type='text' name='input' size='2'/></td>
 </tr><tr>
 <td></td>
-<td style="color: red;">Fill in if you want to be able to edit or delete your post</td>
+<td style="color: blue;">Fill in if you want to be able to edit or delete your post</td>
 </tr><tr>
 <td style="text-align: right;">Email:</td>
 <td><input type='text' name='email' size='40' value='<?php echo $email; ?>'/></td>
@@ -140,7 +171,7 @@ function post() {
 <td><input type='password' name='verify' size='20' value='<?php echo $verify; ?>'/></td>
 </tr><tr>
 <td></td>
-<td style="color: red;">Optional</td>
+<td style="color: blue;">Optional</td>
 </tr><tr>
 <td style="text-align: right;">Name:</td>
 <td><input type='text' name='name' size='40' value='<?php echo $name; ?>'/></td>
@@ -179,7 +210,7 @@ function edit() {
   global $email, $password, $newpass, $verify;
   global $cap, $rand;
 
-  $gen = $cap->generate(sha1($rand->urandom_bytes(20)));
+  $gen = $cap->generate(getscrambler());
   $string = $gen['string'];
   $time = $gen['time'];
   $hash = $gen['hash'];
@@ -192,19 +223,19 @@ function edit() {
 <table>
 <tr>
 <td></td>
-<td style="color: red;">Required</td>
+<td style="color: blue;">Required</td>
 </tr><tr>
 <td style="text-align: right;">Email:</td>
 <td><input type='text' name='email' size='40' value='<?php echo $email; ?>'/></td>
 </tr><tr>
 <td></td>
-<td style="color: red;">Required for "Lookup" and "Change Password"</td>
+<td style="color: blue;">Required for "Lookup" and "Change Password"</td>
 </tr><tr>
 <td style="text-align: right;">Password:</td>
 <td><input type='password' name='password' size='20' value='<?php echo $password; ?>'/></td>
 </tr><tr>
 <td></td>
-<td style="color: red;">Required for "Change Password"</td>
+<td style="color: blue;">Required for "Change Password"</td>
 </tr><tr>
 <td style="text-align: right;">New Password:</td>
 <td><input type='password' name='newpass' size='20' value='<?php echo $newpass; ?>'/></td>
@@ -213,7 +244,7 @@ function edit() {
 <td><input type='password' name='verify' size='20' value='<?php echo $verify; ?>'/></td>
 </tr><tr>
 <td></td>
-<td style="color: red;">Required for "Forgot Password"</td>
+<td style="color: blue;">Required for "Forgot Password"</td>
 </tr><tr>
 <td style='text-align: right;'><?php echo $string; ?> =</td>
 <td><input type='text' name='input' size='2'/></td>
@@ -240,6 +271,15 @@ function videos() {
 <?php
 }
 
+function getscrambler() {
+  global $scrambler_file, $datadb, $rand;
+  $res = $datadb->get($scrambler_file);
+  if (!$res) {
+    $res = sha1($rand->urandom_bytes(20));
+    $datadb->put($scrambler_file, $res);
+  }
+  return $res;
+}
 
 /* Getting youtube header
 
