@@ -48,12 +48,21 @@ $cap = new Mathcap();
 // True to not generate a new captcha
 $keepcap = FALSE;
 
+// The id of the field to focus
+$onloadid = NULL;
+
 ?>
 <html>
 <head>
 <title>The Patrick Henry Project</title>
+<script type="text/javascript">
+  var onloadid = null;
+  function doonload() {
+    if (onloadid) document.getElementById(onloadid).focus();
+  }
+</script>
 </head>
-<body background='background.png'>
+<body background='background.png' onload='doonload();'>
 <div style="width: 60em; margin: 4em auto 4em auto; border: 1px solid blue; padding: 1em; background-color: white;">
 <p style="text-align: center; font-weight: bold; font-size: 125%;">
 The Patrick Henry Project</p>
@@ -81,8 +90,18 @@ Donations support this site and <a href="http://freedomoutlaws.com/">FreedomOutl
 <?php require "paypal.inc"; ?>
 </div>
 </div>
+<?php if ($onloadid) {
+?>
+<script type="text/javascript">
+  onloadid = '<?php echo $onloadid; ?>';
+</script>
+<?php
+}
+?>
+</body>
 </html>
 <?php
+
 function left_column() {
 ?>
 <p>
@@ -109,11 +128,12 @@ function content() {
 function dopost() {
    global $youtube, $video, $name, $email, $url, $password, $verify;
    global $input, $time, $hash;
-   global $datadb, $infodb, $cap, $keepcap;
+   global $datadb, $infodb, $cap, $keepcap, $onloadid;
 
    // Validate captcha
    $keepcap = FALSE;
    if (!$cap->verify($input, $time, $hash, getscrambler())) {
+     $onloadid = 'input';
      return post('Wrong answer to simple arithmetic problem');
    }
    $keepcap = TRUE;
@@ -127,7 +147,10 @@ function dopost() {
      if ($pos==0 && !($pos===FALSE)) $video = substr($query, 2);
      else {
        $pos = strpos($query, '&v=');
-       if ($pos === FALSE) return post('Malformed URL');
+       if ($pos === FALSE) {
+         $onloadid = 'url';
+         return post('Malformed URL');
+       }
        $video = substr($query, $pos+3);
      }
      $pos = strpos($video, '&');
@@ -136,16 +159,27 @@ function dopost() {
      $video = @$yt['path'];
      if (strlen($video) > 0) $video = substr($video, 1);
    } else {
+     $onloadid = 'url';
      return post('Malformed URL');
    }
 
    // Validate email and password
-   if (!$email) return post('Email address is required');
-   if (!$password) return post('Password is required');
-   if ($password != $verify) return post('Passwords do not match');
+   if (!$email) {
+     $onloadid = 'email';
+     return post('Email address is required');
+   }
+   if (!$password) {
+     $onloadid = 'password';
+     return post('Password is required');
+   }
+   if ($password != $verify) {
+     $onloadid = 'password';
+     return post('Passwords do not match');
+   }
 
    if ($url && strpos($url, "http://")===FALSE && strpos($url, "https://")===FALSE) {
      $url = "http://$url";      // Probably right, but make user verify
+     $onloadid = 'url';
      return post('Prefixed Web Site with "http://". Verify and resubmit.');
    }
 
@@ -218,9 +252,10 @@ function doedit() {
 
 function post($error=null) {
   global $youtube, $name, $url, $email, $password, $verify;
-  global $cap, $keepcap, $rand, $default_error;
+  global $cap, $keepcap, $rand, $default_error, $onloadid;
 
   if (!$error) $error = $default_error;
+  if (!$onloadid) $onloadid = 'youtube';
 
   $gen = gencap();
   $string = $gen['string'];
@@ -253,25 +288,25 @@ This site saves only a cryptographic hash of your email address. That allows us 
 <td><input type='text' name='youtube' id='youtube' size='40' value='<?php echo $youtube; ?>'/></td>
 </tr><tr>
 <td style='text-align: right;'><?php echo $string; ?> =</td>
-<td><input type='text' name='input' size='2' value='<?php echo $input; ?>'/></td>
+<td><input type='text' name='input' id='input' size='2' value='<?php echo $input; ?>'/></td>
 </tr><tr>
 <td style="text-align: right;">Email:</td>
-<td><input type='text' name='email' size='40' value='<?php echo $email; ?>'/></td>
+<td><input type='text' name='email' id='email' size='40' value='<?php echo $email; ?>'/></td>
 </tr><tr>
 <td style="text-align: right;">Password:</td>
-<td><input type='password' name='password' size='20' value='<?php echo hsc($password); ?>'/></td>
+<td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
 </tr><tr>
 <td style="text-align: right;">Password Again:</td>
-<td><input type='password' name='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
+<td><input type='password' name='verify' id='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
 </tr><tr>
 <td></td>
 <td style="color: blue;">Optional</td>
 </tr><tr>
 <td style="text-align: right;">Name:</td>
-<td><input type='text' name='name' size='40' value='<?php echo hsc($name); ?>'/></td>
+<td><input type='text' name='name' id='name' size='40' value='<?php echo hsc($name); ?>'/></td>
 </tr><tr>
 <td style="text-align: right;">Web Site:</td>
-<td><input type='text' name='url' size='40' value='<?php echo hsc($url); ?>'/></td>
+<td><input type='text' name='url' id='url' size='40' value='<?php echo hsc($url); ?>'/></td>
 </tr><tr>
 <td></td>
 <td><input type='submit' name='submit' value='Submit'/></td>
@@ -302,7 +337,9 @@ Finally, press the "Submit" button.
 
 function edit() {
   global $email, $password, $newpass, $verify;
-  global $cap, $rand;
+  global $cap, $rand, $onloadid;
+
+  if (!$onloadid) $onloadid = 'email';
 
   $gen = gencap();
   $string = $gen['string'];
@@ -320,22 +357,22 @@ function edit() {
 <td style="color: blue;">Required</td>
 </tr><tr>
 <td style="text-align: right;">Email:</td>
-<td><input type='text' name='email' size='40' value='<?php echo $email; ?>'/></td>
+<td><input type='text' name='email' id='email' size='40' value='<?php echo $email; ?>'/></td>
 </tr><tr>
 <td></td>
 <td style="color: blue;">Required for "Lookup" and "Change Password"</td>
 </tr><tr>
 <td style="text-align: right;">Password:</td>
-<td><input type='password' name='password' size='20' value='<?php echo hsc($password); ?>'/></td>
+<td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
 </tr><tr>
 <td></td>
 <td style="color: blue;">Required for "Change Password"</td>
 </tr><tr>
 <td style="text-align: right;">New Password:</td>
-<td><input type='password' name='newpass' size='20' value='<?php echo hsc($newpass); ?>'/></td>
+<td><input type='password' name='newpass' id='newpass' size='20' value='<?php echo hsc($newpass); ?>'/></td>
 </tr><tr>
 <td style="text-align: right;">Again:</td>
-<td><input type='password' name='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
+<td><input type='password' name='verify' id='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
 </tr><tr>
 <td></td>
 <td style="color: blue;">Required for "Forgot Password"</td>

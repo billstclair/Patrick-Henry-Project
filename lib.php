@@ -3,6 +3,7 @@
 require_once "lib/fsdb.php";
 require_once "lib/LoomRandom.php";
 require_once "lib/Mathcap.php";
+require_once "lib/mcrypt.php";
 
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1/Apache 2.0
