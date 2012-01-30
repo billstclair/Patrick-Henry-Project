@@ -24,7 +24,7 @@ $page = mqreq('page');
 // Form parameters
 $cmd = mqreq('cmd');
 $youtube = mqreq('youtube');
-$video = '';
+$video = mqreq('video');
 $name = mqreq('name');
 $email = mqreq('email');
 $url = mqreq('url');
@@ -35,6 +35,7 @@ $string = mqreq('string');
 $input = mqreq('input');
 $time = mqreq('time');
 $hash = mqreq('hash');
+$info = mqreq('info');
 $submit = mqreq('submit');
 $edit = mqreq('edit');
 $forgot = mqreq('forgot');
@@ -44,6 +45,7 @@ $datadb = new fsdb($datadir);
 $infodb = new fsdb($infodir);
 $rand = new LoomRandom();
 $cap = new Mathcap();
+$mcrypt = new mcrypt();
 
 // True to not generate a new captcha
 $keepcap = FALSE;
@@ -118,6 +120,7 @@ function content() {
   //  echo "<pre>"; print_r($_REQUEST); echo "</pre>\n";
   if ($cmd == 'post') dopost();
   elseif ($cmd == 'finishpost') finishpost();
+  elseif ($cmd == 'register') register();
   elseif ($cmd == 'edit') doedit();
   elseif ($page == 'videos') videos();
   elseif ($page == 'post') post();
@@ -148,8 +151,8 @@ function dopost() {
      else {
        $pos = strpos($query, '&v=');
        if ($pos === FALSE) {
-         $onloadid = 'url';
-         return post('Malformed URL');
+         $onloadid = 'youtube';
+         return post('Malformed Youtube Video link');
        }
        $video = substr($query, $pos+3);
      }
@@ -159,8 +162,8 @@ function dopost() {
      $video = @$yt['path'];
      if (strlen($video) > 0) $video = substr($video, 1);
    } else {
-     $onloadid = 'url';
-     return post('Malformed URL');
+     $onloadid = 'youtube';
+     return post('Malformed Youtube Video link');
    }
 
    // Validate email and password
@@ -229,19 +232,79 @@ function displayPost() {
 function finishpost() {
    global $youtube, $video, $email, $password, $verify, $name, $url;
    global $keepcap, $string, $input, $time, $hash;
-   global $submit, $edit;
+   global $submit, $edit, $cap, $mcrypt;
 
+   $scrambler = getscrambler();
+   if (!$cap->verify($input, $time, $hash, $scrambler)) {
+     $onloadid = 'input';
+     return post('Wrong answer to simple arithmetic problem');
+   }
    if ($edit) {
      $keepcap = TRUE;
      $verify = $password;
-     post();
-   } else {
-     $reginfo = array('video' => $video,
-                      'email' => $email,
-                      'password' => $password);
-     if ($name) $reginfo['name'] = $name;
-     if ($url) $reginfo['url'] = $url;
+     return post();
    }
+   $reginfo = array('video' => $video,
+                    'email' => $email,
+                    'password' => $password);
+   if ($name) $reginfo['name'] = $name;
+   if ($url) $reginfo['url'] = $url;
+   $info = serialize($reginfo);
+   $info = urlencode($mcrypt->encrypt($info, $scrambler));
+   $host = @$_SERVER['HTTP_HOST'];
+   if (!$host) $host = "patrickhenryproject.org";
+   $uri = @$_SERVER['REQUEST_URI'];
+   $pos = strpos($uri, "?");
+   if (!($pos === FALSE)) $uri = substr($uri, 0, $pos);
+   $http = @$_SERVER['HTTPS'] ? "https" : "http";
+   $fullurl = "$http://$host$uri?cmd=register&info=$info";
+
+   $to = $email;
+   $subject = "Post verification from The Patrick Henry Project";
+
+   $message = "
+<html>
+  <head>
+    <title>$subject</title>
+  </head>
+  <body>
+    <p>Click the link below to complete your video post.</p>
+    <p style='margin-left: 2em;'><a href='$fullurl'>Complete Post</a></p>
+    <p>If you didn't post a video to the Patrick Henry Project, please ignore this message.</p>
+  </body>
+</html>
+";
+
+   $headers  = 'MIME-Version: 1.0' . "\r\n";
+   $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
+   $headers .= 'From: admin@patrickhenryproject.org' . "\r\n";
+
+   mail($to, $subject, $message, $headers);
+?>
+<p>An email has been sent to <?php echo $email; ?>. Click on the link in that email to complete your post.</p>
+<?php
+}
+
+function register() {
+  global $info;
+  global $youtube, $video, $email, $password, $verify, $name, $url;
+  global $keepcap, $string, $input, $time, $hash;
+  global $submit, $edit, $cap, $mcrypt;
+  
+  $info = @$mcrypt->decrypt($info, getscrambler());
+  $reginfo = @unserialize($info);
+  if (!$reginfo) {
+    return post("Malformed registration info.");
+  }
+  echo "<pre>"; print_r($reginfo); echo "</pre>\n";
+  $video = $reginfo['video'];
+  $youtube = "http://youtu.be/$video";
+  $email = $reginfo['email'];
+  $password = $reginfo['password'];
+  $verify = $password;
+  $name = $reginfo['name'];
+  $url = $reginfo['url'];
+  post("This site doesn't yet save posts. Soon.");
 }
 
 function doedit() {
