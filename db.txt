@@ -1,0 +1,77 @@
+This file documents the "database" used to store and index posted
+videos. The information is stored in the file system, based in the
+$datadir directory (settings.php). The outline below has a "/" at the
+end of the line of a directory, and an "=" in the middle of a line of a
+file, with the general form of the data in that file after the "=".
+
+The database operations are coded in lib/database.php, using my File
+System DataBase, lib/fsdb.php.
+
+Contents that are PHP arrays are converted to text by serialize() and
+converted back to arrays by unserialize().
+
+The "scrambler" file contains a 16-bit random number, encoded as a hex
+string, which is used to scramble hashes and as the key for the
+encrypted registration link sent to a new poster.
+
+The "freelist" file contains a comma-separated list of deleted post
+numbers. I'm hoping this won't get very long. If it does, I may need
+to add some directory structure to avoid reading a very long file in
+order to delete or add a post. Alternatively, I could not reuse
+deleted post numbers, that will lead to sparse pages, and unstable
+URLs to see the page containing a particular post.
+
+The "info" directory stores the information about individual posts,
+indexed by post number. Each of the files in the "info" directory
+contains information for 100 posts. The path from the top-level
+through the subdirectories is the prefix of the actual video number,
+two digits at a time. So video number 1234567 would be stored in
+info/01/23/f45[67]. This allows up to a million posts in on level of
+directory hierarchy under "info", and 100 million posts in two levels,
+with a maximum of 199 items per directory, 100 files plus 99
+subdirectories. In a non-compressing file system, this wastes more
+block-rounding space than a regular database file would, but it's dirt
+simple.
+
+The "email" directory maps the sha1 hash of the users's email address,
+represented as a hex string, to his post number, using two levels of
+directory hierarchy to pull off the first four digits. This enables 16
+million posts with 256 entries in each of three directory levels.
+
+$datadir/
+  scrambler=<A random string for scrambling hashes and encryption key>
+  count=<The number of posts in info>
+  freelist=<Comma-separated list of deleted post numbers>
+  info/
+    01/
+      01/
+      ...
+      99/
+      f00=...
+      ...
+      f99=...
+    ...
+    99/
+    f00=array(0=>array('video'=>$video, 'email'=>$email, 'password'=>$passwordhash,
+                       'name'=>$name, 'url'=>$url),
+              ...
+              99=>array('video'=>$video, ...))
+    ...
+    f99=array(0=>array('video=>$video, ...), ...)
+   email/
+     00/
+       00/
+         <emailhash>=<postnumber>
+         ...
+       01/
+         <emailhash>=<postnumber>
+         ...
+       ...
+       ff/
+         <emailhash>=<postnumber>
+         ...
+     02/
+       ...
+     ...
+     ff/
+       ...
