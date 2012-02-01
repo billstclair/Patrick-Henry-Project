@@ -52,7 +52,8 @@ $datadir/
       f99=...
     ...
     99/
-    f00=array(0=>array('video'=>$video, 'email'=>$email, 'password'=>$passwordhash,
+    f00=array(0=>array('video'=>$video, 'email'=>$emailhash,
+                       'password'=>$passwordhash,
                        'name'=>$name, 'url'=>$url),
               ...
               99=>array('video'=>$video, ...))

@@ -1,6 +1,10 @@
 <?php
+
+  // Home page for patrickhenryproject.org
+
 require_once "settings.php";
 require_once "lib.php";
+require_once "db.php";
 
 function mq($x) {
   if (get_magic_quotes_gpc()) return stripslashes($x);
@@ -41,9 +45,7 @@ $edit = mqreq('edit');
 $forgot = mqreq('forgot');
 $changepass = mqreq('changepass');
 
-$datadb = new fsdb($datadir);
-$infodb = new fsdb($infodir);
-$rand = new LoomRandom();
+$db = new db();
 $cap = new Mathcap();
 $mcrypt = new mcrypt();
 
@@ -131,7 +133,7 @@ function content() {
 function dopost() {
    global $youtube, $video, $name, $email, $url, $password, $verify;
    global $input, $time, $hash;
-   global $datadb, $infodb, $cap, $keepcap, $onloadid;
+   global $cap, $keepcap, $onloadid;
 
    // Validate captcha
    $keepcap = FALSE;
@@ -315,7 +317,7 @@ function doedit() {
 
 function post($error=null) {
   global $youtube, $name, $url, $email, $password, $verify;
-  global $cap, $keepcap, $rand, $default_error, $onloadid;
+  global $cap, $keepcap, $default_error, $onloadid;
 
   if (!$error) $error = $default_error;
   if (!$onloadid) $onloadid = 'youtube';
@@ -400,7 +402,7 @@ function post($error=null) {
 
 function edit() {
   global $email, $password, $newpass, $verify;
-  global $cap, $rand, $onloadid;
+  global $cap, $onloadid;
 
   if (!$onloadid) $onloadid = 'email';
 
@@ -472,13 +474,8 @@ function gencap() {
 }
 
 function getscrambler() {
-  global $scrambler_file, $datadb, $rand;
-  $res = $datadb->get($scrambler_file);
-  if (!$res) {
-    $res = sha1($rand->urandom_bytes(20));
-    $datadb->put($scrambler_file, $res);
-  }
-  return $res;
+  global $db;
+  return $db->getscrambler();
 }
 
 /* Getting youtube header
