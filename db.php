@@ -53,20 +53,72 @@ class db {
     return $res;
   }
 
-  function getinfo($postnum) {
-    $split = $this->split($postnum, 0);
+  function infopath($postnum, $levels=0, $finalprefix='f') {
+    $split = $this->split($postnum, $levels);
+    $path = "";
+    $cnt = count($split);
+    for ($i=0; $i<$cnt-1; $i++) {
+      $path .= $split[$i] . '/';
+    }
+    $path .= $finalprefix . $split[$cnt-1];
+    return $path;
   }
 
+  function getinfo($postnum) {
+    $infodb = $this->infodb;
+    $path = $this->infopath($postnum);
+    $str = $infodb->get($path);
+    return unserialize($str);
+  }
+
+  function putinfo($postnum, $info) {
+    $infodb = $this->infodb;
+    $path = $this->infopath($postnum);
+    $str = serialize($info);
+    $infodb->put($path, $str);
+  }
+
+  function getemailpost($email) {
+    $emaildb = $this->emaildb;
+    $hash = sha1($email);
+    $path = $this->infopath($hash, 2, '');
+    return $emaildb->get($path);
+  }
+
+  function putemailpost($email, $postnum) {
+    $emaildb = $this->emaildb;
+    $hash = sha1($email);
+    $path = $this->infopath($hash, 2, '');
+    $emaildb->put($path, $postnum);
+  }
+
+  function getcount() {
+    global $countkey;
+
+    $datadb = $this->datadb;
+    $res = $datadb->get($countkey);
+    if (!$res) $res = 0;
+    return $res;
+  }
+
+  function putcount($count) {
+    global $countkey;
+
+    $datadb = $this->datadb;
+    $datadb->put($countkey, $count);
+  }
 }
 
 // Test code
 /*
 
 $db = new db();
-$res = $db->split("x0x1x2x3", 0);
-$res2 = $db->split("x1x2x3x4", 2);
-print_r($res);
-print_r($res2);
+$db->putemailpost("bill@billstclair.com", 1);
+$db->putemailpost("billstclair@gmail.com", 2);
+$db->putemailpost("wws@clozure.com", 3);
+echo $db->getemailpost("bill@billstclair.com") . ', ' .
+$db->getemailpost("billstclair@gmail.com") . ', ' .
+$db->getemailpost("wws@clozure.com") . "\n";
 
 */
 
