@@ -105,7 +105,58 @@ class db {
     global $countkey;
 
     $datadb = $this->datadb;
+    // This works around a bug I don't understand.
+    // When the key gets n+1 chars in size, PHP only reads the first n chars.
+    $datadb->put($countkey, "");
     $datadb->put($countkey, $count);
+  }
+
+  function getfreelist() {
+    global $freelistkey;
+
+    $datadb = $this->datadb;
+    return $datadb->get($freelistkey);
+  }
+
+  function putfreelist($freelist) {
+    global $freelistkey;
+
+    $datadb = $this->datadb;
+    $datadb->put($freelistkey, $freelist);
+  }
+
+  function nextpostnum() {
+    $freelist = $this->getfreelist();
+    if ($freelist) {
+      $pos = strpos($freelist, ',');
+      if ($pos) {
+        $res = substr($freelist, 0, $pos);
+        $freelist = substr($freelist, $pos+1);
+      } else {
+        $res = $freelist;
+        $freelist = "";
+      }
+      $this->putfreelist($freelist);
+    } else {
+      $res = $this->getcount() + 1;
+      $this->putcount($res);
+    }
+    return $res;
+  }
+
+  function freepostnum($postnum) {
+    $count = $this->getcount() + 0;
+    if ($postnum == $count) {
+      $this->putcount($count-1);
+    } else {
+      $freelist = $this->getfreelist();
+      if ($freelist) $freelist .= ',';
+      $freelist .= $postnum;
+      $freelist = explode(',', $freelist);
+      sort($freelist, SORT_NUMERIC);
+      $freelist = implode($freelist, ',');
+      $this->putfreelist($freelist);
+    }
   }
 }
 
@@ -113,13 +164,30 @@ class db {
 /*
 
 $db = new db();
+
+$posts = array();
+for ($i=0; $i<20; $i++) {
+  $posts[$i] = $db->nextpostnum();
+}
+print_r($posts);
+//exit();
+$db->freepostnum($posts[19]);
+$db->freepostnum($posts[18]);
+$db->freepostnum($posts[3]);
+$db->freepostnum($posts[1]);
+$count = $db->getcount();
+$freelist = $db->getfreelist();
+echo "count: $count, freelist: $freelist\n";
+
+*/
+
+/*
 $db->putemailpost("bill@billstclair.com", 1);
 $db->putemailpost("billstclair@gmail.com", 2);
 $db->putemailpost("wws@clozure.com", 3);
 echo $db->getemailpost("bill@billstclair.com") . ', ' .
 $db->getemailpost("billstclair@gmail.com") . ', ' .
 $db->getemailpost("wws@clozure.com") . "\n";
-
 */
 
 /* ***** BEGIN LICENSE BLOCK *****

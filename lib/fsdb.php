@@ -74,7 +74,11 @@ class fsdb {
       @unlink($filename);
       // Should delete the empty directories in the path, too.
     }
-    else fwrite($fp, $value);
+    else {
+      //echo "fwrite(fp, '$value')\n";
+      fwrite($fp, $value);
+      fflush($fp);
+    }
     fclose($fp);
     return $value;
   }
