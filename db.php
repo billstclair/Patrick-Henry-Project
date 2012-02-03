@@ -53,8 +53,8 @@ class db {
     return $res;
   }
 
-  function infopath($postnum, $levels=0, $finalprefix='f') {
-    $split = $this->split($postnum, $levels);
+  function infopath($str, $levels=0, $finalprefix='f') {
+    $split = $this->split($str, $levels);
     $path = "";
     $cnt = count($split);
     for ($i=0; $i<$cnt-1; $i++) {
@@ -64,17 +64,38 @@ class db {
     return $path;
   }
 
+  function splitend($postnum, &$start, &$end) {
+    $postnum = $postnum . "";
+    $len = strlen($postnum);
+    if ($len < 2) {
+      $start = '00';
+      if (!$postnum) $postnum = '00';
+      if (strlen($postnum) == 1) $postnum = "0$postnum";
+      $end = $postnum;
+    } else {
+      $start = substr($postnum, 0, $len-2);
+      $end = substr($postnum, $len-2);
+    }
+  }
+
   function getinfo($postnum) {
     $infodb = $this->infodb;
-    $path = $this->infopath($postnum);
+    $this->splitend($postnum, $prefix, $idx);
+    $path = $this->infopath($prefix);
     $str = $infodb->get($path);
-    return unserialize($str);
+    $arr = unserialize($str);
+    return $arr[$idx];
   }
 
   function putinfo($postnum, $info) {
     $infodb = $this->infodb;
-    $path = $this->infopath($postnum);
-    $str = serialize($info);
+    $this->splitend($postnum, $prefix, $idx);
+    $path = $this->infopath($prefix);
+    $str = $infodb->get($path);
+    $arr = $str ? unserialize($str) : array();
+    $arr[$idx] = $info;
+    $str = serialize($arr);
+    $infodb->put($path, '');    // Work around fsdb bug
     $infodb->put($path, $str);
   }
 
@@ -106,7 +127,7 @@ class db {
 
     $datadb = $this->datadb;
     // This works around a bug I don't understand.
-    // When the key gets n+1 chars in size, PHP only reads the first n chars.
+    // When the count gets n+1 chars in size, PHP only reads the first n chars.
     $datadb->put($countkey, "");
     $datadb->put($countkey, $count);
   }
@@ -161,6 +182,44 @@ class db {
 }
 
 // Test code
+
+/*
+$db = new db();
+
+$db->putinfo(1, "one");
+$db->putinfo(2, "two");
+$db->putinfo(3, "three");
+$db->putinfo(101, "one oh one");
+$db->putinfo(102, "one oh two");
+$db->putinfo(103, "one oh three");
+$db->putinfo(10001, "ten thousand one");
+$db->putinfo(10002, "ten thousand two");
+$db->putinfo(10003, "ten thousand three");
+$db->putinfo(20010001, "twenty million 10 thousand one");
+$db->putinfo(20010002, "twenty million 10 thousand two");
+$db->putinfo(20010003, "twenty million 10 thousand three");
+
+function getit($x) {
+  global $db;
+  $info = $db->getinfo($x);
+  echo "$x: $info\n";
+}
+
+getit(1);
+getit(2);
+getit(3);
+getit(101);
+getit(102);
+getit(103);
+getit(10001);
+getit(10002);
+getit(10003);
+getit(20010001);
+getit(20010002);
+getit(20010003);
+
+*/
+
 /*
 
 $db = new db();
@@ -182,6 +241,8 @@ echo "count: $count, freelist: $freelist\n";
 */
 
 /*
+$db = new db();
+
 $db->putemailpost("bill@billstclair.com", 1);
 $db->putemailpost("billstclair@gmail.com", 2);
 $db->putemailpost("wws@clozure.com", 3);

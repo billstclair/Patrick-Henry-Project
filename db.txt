@@ -36,7 +36,14 @@ simple.
 The "email" directory maps the sha1 hash of the users's email address,
 represented as a hex string, to his post number, using two levels of
 directory hierarchy to pull off the first four digits. This enables 16
-million posts with 256 entries in each of three directory levels.
+million posts with 256 entries in each of three directory levels. This
+uses a file per email address, which costs lots of block-rounding
+space in a non-compressing file system. It really needs some sort of
+btree structure, but I'm too lazy to write that now. When I notice
+storage crossing a gigabyte, and have to pay NFS $10/month for that,
+it will become worthwhile. But bandwidth requirements will likely move
+me off of NFS before we get there, maybe to a VM that allows me to
+install reiserfs, eliminating the block-rounding wastage.
 
 $datadir/
   scrambler=<A random string for scrambling hashes and encryption key>
