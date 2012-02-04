@@ -6,7 +6,7 @@ require_once "db.php";
 
 $db = new db();
 
-function test_putinfo() {
+function test_putinfo($get=TRUE) {
   global $db;
 
   $db->putinfo(1, "one");
@@ -21,6 +21,8 @@ function test_putinfo() {
   $db->putinfo(20010001, "twenty million 10 thousand one");
   $db->putinfo(20010002, "twenty million 10 thousand two");
   $db->putinfo(20010003, "twenty million 10 thousand three");
+
+  if (!$get) return;
 
   echogetinfo(1);
   echogetinfo(2);
@@ -74,8 +76,8 @@ function test_putemailpost() {
 function test_infomapper() {
   global $db;
 
-  test_putinfo();
-  $m = new infomapper($db->infodb);
+  test_putinfo(FALSE);
+  $m = $db->infomapper();
   while (!$m->isempty()) {
     $next = $m->next();
     echo "$next\n";

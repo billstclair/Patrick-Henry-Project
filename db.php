@@ -120,6 +120,14 @@ class db {
     $this->putinfo_internal($this->modinfodb, $postnum, $info);
   }
 
+  function infomapper($start=FALSE) {
+    return new infomapper($this->infodb, $start);
+  }
+
+  function modinfomapper($start=FALSE) {
+    return new infomapper($this->modinfodb, $start);
+  }
+
   function getemailpost($email) {
     $emaildb = $this->emaildb;
     $hash = sha1($email);
