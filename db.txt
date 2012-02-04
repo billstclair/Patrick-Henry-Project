@@ -22,16 +22,11 @@ deleted post numbers, that will lead to sparse pages, and unstable
 URLs to see the page containing a particular post.
 
 The "info" directory stores the information about individual posts,
-indexed by post number. Each of the files in the "info" directory
-contains information for 100 posts. The path from the top-level
-through the subdirectories is the prefix of the actual video number,
-two digits at a time. So video number 1234567 would be stored in
-info/01/23/f45[67]. This allows up to a million posts in on level of
-directory hierarchy under "info", and 100 million posts in two levels,
-with a maximum of 199 items per directory, 100 files plus 99
-subdirectories. In a non-compressing file system, this wastes more
-block-rounding space than a regular database file would, but it's dirt
-simple.
+indexed by post number. Its sub-directories are numbered by the string
+length of the post number divided by 2. Each leaf-level file
+contains up to 100 entries, a PHP array, serialized for storge. This
+enables storage of 100**9 + 100**8 + ... + 100 = 10**20
+posts. Probably sufficient.
 
 The "modinfo" directory is formed just like "info", but it stores
 posts that are awaiting moderation.
@@ -53,24 +48,39 @@ $datadir/
   count=<The number of posts in info>
   freelist=<Comma-separated list of deleted post numbers>
   info/
-    01/
+    0/
+      f00=array(00=>array('video'=>$video, 'email'=>$emailhash,
+                          'password'=>$passwordhash,
+                          'name'=>$name, 'url'=>$url),
+                01=>array('video'=>$video, ...),
+                ...
+                99=>array('video'=>$video, ...))
+    1/
       01/
+        f00=array(...)
+        f01=array(...)
+        ...
+        f99=array(...)
+      02/
       ...
       99/
-      f00=...
+    2/
+      01/
+        00/
+          f00=array(...)
+          f01=array(...)
+          ...
+          f99=array(...)
+        01/
+        ...
+        99/
+      02/
       ...
-      f99=...
+      99/
     ...
-    99/
-    f00=array(0=>array('video'=>$video, 'email'=>$emailhash,
-                       'password'=>$passwordhash,
-                       'name'=>$name, 'url'=>$url),
-              ...
-              99=>array('video'=>$video, ...))
-    ...
-    f99=array(0=>array('video=>$video, ...), ...)
+    9/
    modinfo/
-     ...
+     [same as info/]
    email/
      00/
        00/

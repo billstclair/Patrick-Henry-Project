@@ -40,6 +40,7 @@ class db {
   }
 
   function infopath($str, $levels=0, $finalprefix='f') {
+    if ($str == 0 && $levels==0) return "0/$finalprefix"."00";
     $split = splitinfopath($str, $levels);
     $path = "";
     $cnt = count($split);
@@ -47,6 +48,7 @@ class db {
       $path .= $split[$i] . '/';
     }
     $path .= $finalprefix . $split[$cnt-1];
+    if ($levels == 0) $path = $path ? "$cnt/$path" : $cnt;
     return $path;
   }
 
@@ -73,6 +75,7 @@ class db {
     $str = $fsdb->get($path);
     $arr = $str ? unserialize($str) : array();
     $arr[$idx] = $info;
+    ksort($arr);
     $str = serialize($arr);
     $fsdb->put($path, '');    // Work around fsdb bug
     $fsdb->put($path, $str);
@@ -200,43 +203,32 @@ class infomapper {
     $fsdb = $this->fsdb;
     $dirstack = array();
     $contentsliststack = array();
-    $dir = '';
     splitpostnum($start, $prefix, $idx);
     $path = splitinfopath($prefix);
-    echo "idx: $idx, path:\n"; print_r($path);
+    $lendir = $prefix ? count($path) : 0;
+    $path = array_merge(array($lendir), $path);
+    $dir = '';
+    //echo "idx: $idx, path:\n"; print_r($path);
     $pathlen = count($path);
     $maxi = $pathlen-1;
     for ($i=0; $i<$pathlen; $i++) {
       $pathelt = $path[$i];
       $contentslist = $fsdb->contents($dir);
-      $j = $this->findex($contentslist);
-      if ($j === FALSE) {
-        $dircontents = $contentslist;
-        $filecontents = array();
-      } else {
-        $dircontents = array_slice($contentslist, 0, $j);
-        $filecontents = array_slice($contentslist, $j);
-      }
-      echo "i: $i, maxi, $maxi, dircontents:\n";
-      print_r($dircontents);
-      echo "filecontents:\n";
-      print_r($filecontents);
-      $contentslist = NULL;
       if ($i == $maxi) {
         $pathelt = 'f'.$pathelt;
-        $len = count($filecontents);
+        $len = count($contentslist);
         for ($j=0; $j<$len; $j++) {
-          $elt = $filecontents[$j];
-          echo "pathelt: $pathelt, elt: $elt\n";
+          $elt = $contentslist[$j];
+          //echo "pathelt: $pathelt, elt: $elt\n";
           if ($pathelt <= $elt) {
-            $filecontents = array_slice($filecontents, $j+1);
-            echo "filecontents 2:\n"; print_r($filecontents);
+            $contentslist = array_slice($contentslist, $j+1);
+            //echo "contentslist 2:\n"; print_r($contentslist);
             if ($pathelt == $elt) {
-              $path = $dir ? "$dir/$pathelt" : $pathelt;
+              $path = ($dir === '') ? $pathelt : "$dir/$pathelt";
               $contents = unserialize($fsdb->get($path));
               $k = 0;
               foreach ($contents as $key => $value) {
-                echo "idx: $idx, key: $key\n";
+                //echo "idx: $idx, key: $key\n";
                 if ($idx <= $key) break;
                 $k++;
               }
@@ -244,28 +236,27 @@ class infomapper {
             } else {
               $contents = array();
             }
-            $contentslist = array_merge($filecontents, $dircontents);
-            echo "contentslist:\n"; print_r($contentslist);
+            //echo "contentslist:\n"; print_r($contentslist);
             break 2;
           }
         }
-        $contentslist = $dircontents;
       } else {
-        $len = count($dircontents);
+        $len = count($contentslist);
         for ($j=0; $j<$len; $j++) {
-          $elt = $dircontents[$j];
-          echo "pathelt 2: $pathelt, elt: $elt\n";
+          $elt = $contentslist[$j];
+          //echo "pathelt 2: $pathelt, elt: $elt\n";
           if ($pathelt <= $elt) {
-            $dircontents = array_slice($dircontents, $j+1);
+            $contentslist = array_slice($contentslist, $j+1);
             if ($pathelt == $elt) {
-              if (count($dircontents) > 0) {
+              if (count($contentslist) > 0) {
                 $dirstack[] = $dir;
-                $contentsliststack[] = $dircontents;
+                $contentsliststack[] = $contentslist;
               }
-              $dir = $dir ? "$dir/$elt" : $elt;
+              if (!($dir === '')) $dir .= '/';
+              $dir .= $elt;
               break;
             } else {
-              $contentslist = $dircontents;
+              $contentslist = $contentslist;
               $contents = array();
               break 2;
             }
@@ -314,12 +305,14 @@ class infomapper {
     if (count($this->contents) > 0) return array_shift($this->contents);
     while (true) {
       if ($this->isempty()) return null;
+      //print_r($this);
       $next = array_shift($this->contentslist);
       $key = $this->dir;
-      if ($key) $key .= '/';
+      if (!($key === '')) $key .= '/';
       $key .= $next;
       if (substr($next, 0, 1) == 'f') {
         $res = $fsdb->get($key);
+        //echo "key: $key, res: $res\n";
         if ($this->isempty()) {
           if (count($this->dirstack) > 0) {
             $this->dir = array_pop($this->dirstack);
@@ -332,7 +325,7 @@ class infomapper {
         $this->contents = $contents;
         return $res;
       }
-      $contentslist = $this->sortcontents($fsdb->contents($key));
+      $contentslist = $fsdb->contents($key);
       if (count($contentslist) == 0) {
         if (count($this->contentslist) == 0) {
           if (count($this->dirstack) == 0) return null;
@@ -375,7 +368,7 @@ function splitpostnum($postnum, &$start, &$end) {
   $postnum = $postnum . "";
   $len = strlen($postnum);
   if ($len < 2) {
-    $start = '00';
+    $start = 0;
     if (!$postnum) $postnum = '00';
     if (strlen($postnum) == 1) $postnum = "0$postnum";
     $end = $postnum;

@@ -115,7 +115,7 @@ function test_infomapper() {
 function test1map($m, $num) {
   $val = $m->next();
   if ($num != $val) echo "$num != $val\n";
-  else echo "$num\n";
+  //else echo "$num\n";
 }
 
 function test_infomapper_start($idx) {
@@ -126,7 +126,7 @@ function test_infomapper_start($idx) {
   $nums = array_slice($putinfonums, $idx);
 
   $m = $db->infomapper($start);
-  print_r($m);
+  //print_r($m);
   foreach ($nums as $num) {
     test1map($m, $num);
     test1map($m, $num+1);
@@ -139,4 +139,13 @@ function test_infomapper_start($idx) {
 }
 
 test_putinfo();
-test_infomapper_start(5);
+test_infomapper_start(0);
+test_infomapper_start(10);
+test_infomapper_start(20);
+
+/*
+$start = $putinfonums[10];
+echo "start: $start\n";
+$m = $db->infomapper($start);
+print_r($m);
+*/
