@@ -6,42 +6,70 @@ require_once "db.php";
 
 $db = new db();
 
-function test_putinfo($get=TRUE) {
+function putit($x) {
   global $db;
+  $db->putinfo($x, $x);
+}
 
-  $db->putinfo(1, "one");
-  $db->putinfo(2, "two");
-  $db->putinfo(3, "three");
-  $db->putinfo(101, "one oh one");
-  $db->putinfo(102, "one oh two");
-  $db->putinfo(103, "one oh three");
-  $db->putinfo(10001, "ten thousand one");
-  $db->putinfo(10002, "ten thousand two");
-  $db->putinfo(10003, "ten thousand three");
-  $db->putinfo(20010001, "twenty million 10 thousand one");
-  $db->putinfo(20010002, "twenty million 10 thousand two");
-  $db->putinfo(20010003, "twenty million 10 thousand three");
+function put3($x) {
+  putit($x);
+  putit($x+1);
+  putit($x+2);
+}
 
-  if (!$get) return;
-
-  echogetinfo(1);
-  echogetinfo(2);
-  echogetinfo(3);
-  echogetinfo(101);
-  echogetinfo(102);
-  echogetinfo(103);
-  echogetinfo(10001);
-  echogetinfo(10002);
-  echogetinfo(10003);
-  echogetinfo(20010001);
-  echogetinfo(20010002);
-  echogetinfo(20010003);
+function put3s($nums) {
+  foreach ($nums as $num) {
+    put3($num);
+  }
 }
 
 function echogetinfo($x) {
   global $db;
   $info = $db->getinfo($x);
   echo "$x: $info\n";
+}
+
+function get1($num) {
+  global $db;
+  $x = $db->getinfo($num);
+  if ($x != $num) echo "getinfo($num) != $x\n";
+}
+
+function get3($num) {
+  get1($num);
+  get1($num+1);
+  get1($num+2);
+}
+
+function get3s($nums) {
+  foreach ($nums as $num) {
+    get3($num);
+  }
+}
+
+$putinfonums =
+  array(      1,     101,     201,     301,
+          10001,   10101,   10201,   10301,
+          20001,   20101,   20201,   20301,
+          30001,   30101,   30201,   30301,
+        1000001, 1000101, 1000201, 1000301,
+        1010001, 1010101, 1010201, 1010301,
+        1020001, 1020101, 1020201, 1020301,
+        2000001, 2000101, 2000201, 2000301,
+        2010001, 2010101, 2010201, 2010301,
+        2020001, 2020101, 2020201, 2020301,
+        3000001, 3000101, 3000201, 3000301,
+        3010001, 3010101, 3010201, 3010301,
+        3020001, 3020101, 3020201, 3020301);
+
+function test_putinfo($get=TRUE) {
+  global $db, $putinfonums;
+               
+  put3s($putinfonums);
+
+  if (!$get) return;
+
+  get3s($putinfonums);
 }
 
 function test_nextpostnum() {
@@ -84,4 +112,31 @@ function test_infomapper() {
   }
 }
 
-test_infomapper();
+function test1map($m, $num) {
+  $val = $m->next();
+  if ($num != $val) echo "$num != $val\n";
+  else echo "$num\n";
+}
+
+function test_infomapper_start($idx) {
+  global $db, $putinfonums;
+
+  $start = $putinfonums[$idx];
+  echo "start: $start\n";
+  $nums = array_slice($putinfonums, $idx);
+
+  $m = $db->infomapper($start);
+  print_r($m);
+  foreach ($nums as $num) {
+    test1map($m, $num);
+    test1map($m, $num+1);
+    test1map($m, $num+2);
+  }
+  if (!$m->isempty()) {
+    print_r($m);
+    echo "Not empty\n";
+  }
+}
+
+test_putinfo();
+test_infomapper_start(5);

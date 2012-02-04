@@ -39,28 +39,8 @@ class db {
     return $res;
   }
 
-  function split($string, $levels) {
-    $len = strlen($string);
-    if ($len % 2 == 1) {
-      $string = "0$string";
-      $len++;
-    }
-    $idx = 0;
-    $res = array();
-    for ($i=0; $idx<$len; $i++) {
-      $sub = substr($string, $idx, 2);
-      $res[$i] = $sub;
-      $idx += 2;
-      if ($i+1 == $levels) {
-        $res[$i+1] = substr($string, $idx);
-        break;
-      }
-    }
-    return $res;
-  }
-
   function infopath($str, $levels=0, $finalprefix='f') {
-    $split = $this->split($str, $levels);
+    $split = splitinfopath($str, $levels);
     $path = "";
     $cnt = count($split);
     for ($i=0; $i<$cnt-1; $i++) {
@@ -70,22 +50,8 @@ class db {
     return $path;
   }
 
-  function splitend($postnum, &$start, &$end) {
-    $postnum = $postnum . "";
-    $len = strlen($postnum);
-    if ($len < 2) {
-      $start = '00';
-      if (!$postnum) $postnum = '00';
-      if (strlen($postnum) == 1) $postnum = "0$postnum";
-      $end = $postnum;
-    } else {
-      $start = substr($postnum, 0, $len-2);
-      $end = substr($postnum, $len-2);
-    }
-  }
-
   function getinfo_internal($fsdb, $postnum) {
-    $this->splitend($postnum, $prefix, $idx);
+    splitpostnum($postnum, $prefix, $idx);
     $path = $this->infopath($prefix);
     $str = $fsdb->get($path);
     $arr = unserialize($str);
@@ -102,7 +68,7 @@ class db {
   }
 
   function putinfo_internal($fsdb, $postnum, $info) {
-    $this->splitend($postnum, $prefix, $idx);
+    splitpostnum($postnum, $prefix, $idx);
     $path = $this->infopath($prefix);
     $str = $fsdb->get($path);
     $arr = $str ? unserialize($str) : array();
@@ -218,7 +184,6 @@ class infomapper {
   var $contentslist = null;
   var $contents = array();
 
-  // todo: process $start arg
   function infomapper($fsdb, $start=FALSE) {
     $this->fsdb = $fsdb;
     if ($start) $this->initstart($start);
@@ -228,82 +193,101 @@ class infomapper {
     }
   }
 
+  // This function made me wonder for a minute why I'm not just using MySQL.
+  // But then I remembered the joys of administering a MySQL db, and
+  // the problems I've always had with the server getting overloaded.
   function initstart($start) {
     $fsdb = $this->fsdb;
     $dirstack = array();
     $contentsliststack = array();
     $dir = '';
-    $this->splitend($start, $prefix, $idx);
-    $path = $this->split($prefix);
+    splitpostnum($start, $prefix, $idx);
+    $path = splitinfopath($prefix);
+    echo "idx: $idx, path:\n"; print_r($path);
     $pathlen = count($path);
-    $maxidx = $pathlen-1;
+    $maxi = $pathlen-1;
     for ($i=0; $i<$pathlen; $i++) {
       $pathelt = $path[$i];
       $contentslist = $fsdb->contents($dir);
-      $idx = $this->findex($contentslist);
-      if ($idx == $maxi) {
-        $contentslist = array_slice($contentslist, $idx);
+      $j = $this->findex($contentslist);
+      if ($j === FALSE) {
+        $dircontents = $contentslist;
+        $filecontents = array();
+      } else {
+        $dircontents = array_slice($contentslist, 0, $j);
+        $filecontents = array_slice($contentslist, $j);
+      }
+      echo "i: $i, maxi, $maxi, dircontents:\n";
+      print_r($dircontents);
+      echo "filecontents:\n";
+      print_r($filecontents);
+      $contentslist = NULL;
+      if ($i == $maxi) {
         $pathelt = 'f'.$pathelt;
-        $len = count($contentslist);
+        $len = count($filecontents);
         for ($j=0; $j<$len; $j++) {
-          $elt = $contentslist[$i];
+          $elt = $filecontents[$j];
+          echo "pathelt: $pathelt, elt: $elt\n";
           if ($pathelt <= $elt) {
-            $contentslist = array_slice($contentslist, $j+1);
+            $filecontents = array_slice($filecontents, $j+1);
+            echo "filecontents 2:\n"; print_r($filecontents);
             if ($pathelt == $elt) {
-              $thisdir = $dir ? "$dir/$pathelt" : $pathelt;
-              $contents = $fsdb->get($thisdir);
+              $path = $dir ? "$dir/$pathelt" : $pathelt;
+              $contents = unserialize($fsdb->get($path));
               $k = 0;
               foreach ($contents as $key => $value) {
-                if ($key <= $idx) break;
+                echo "idx: $idx, key: $key\n";
+                if ($idx <= $key) break;
                 $k++;
               }
               $contents = array_slice($contents, $k);
             } else {
               $contents = array();
             }
-            if (count($contentslist) == 0) {
-              if (count($dirstack) > 0) {
-                $dir = array_pop($dirstack);
-                $contentslist = array_pop($contentsliststack);
-              }
-            }
+            $contentslist = array_merge($filecontents, $dircontents);
+            echo "contentslist:\n"; print_r($contentslist);
             break 2;
           }
         }
+        $contentslist = $dircontents;
       } else {
-        $contentslist = array_slice($contentslist, 0, $idx);
-        $len = count($contentslist);
+        $len = count($dircontents);
         for ($j=0; $j<$len; $j++) {
-          $elt = $contentslist[$i];
+          $elt = $dircontents[$j];
+          echo "pathelt 2: $pathelt, elt: $elt\n";
           if ($pathelt <= $elt) {
-            $contentslist = array_slice($contentslist, $j+1);
+            $dircontents = array_slice($dircontents, $j+1);
             if ($pathelt == $elt) {
-              if (count($contentslist) > 0) {
+              if (count($dircontents) > 0) {
                 $dirstack[] = $dir;
-                $contentsliststack[] = $contentslist;
+                $contentsliststack[] = $dircontents;
               }
               $dir = $dir ? "$dir/$elt" : $elt;
+              break;
             } else {
-              if (count($contentslist) == 0) {
-                if (count($dirstack) == 0) {
-                  $dir = array_pop($dirstack);
-                  $contentslist = array_pop($contentslist);
-                }
-                $contents = array();
-                break 2;
-              }
+              $contentslist = $dircontents;
+              $contents = array();
+              break 2;
             }
           }
         }
       }
     }
+    if (count($contentslist) == 0) {
+      if (count($dirstack) > 0) {
+        $dir = array_pop($dirstack);
+        $contentslist = array_pop($contentsliststack);
+      }
+    }
     $this->dirstack = $dirstack;
     $this->contentsliststack = $contentsliststack;
     $this->dir = $dir;
+    $this->contentslist = $contentslist;
     $this->contents = $contents;
   }
 
   function findex($contents) {
+    $len = count($contents);
     for ($i=0; $i<$len; $i++) {
       $name = $contents[$i];
       if (substr($name, 0, 1) == 'f') return $i;
@@ -312,7 +296,6 @@ class infomapper {
   }
 
   function sortcontents($contents) {
-    $len = count($contents);
     $fpos = false;
     $i = $this->findex($contents);
     if (!$i===FALSE) {
@@ -323,7 +306,7 @@ class infomapper {
   }
 
   function isempty() {
-    return count($this->contents)==0 && count($this->contentslist)==0;
+    return (count($this->contents)==0) && (count($this->contentslist)==0);
   }
 
   function next() {
@@ -367,6 +350,41 @@ class infomapper {
     }
   }
 }
+
+function splitinfopath($string, $levels=0) {
+  $len = strlen($string);
+  if ($len % 2 == 1) {
+    $string = "0$string";
+    $len++;
+  }
+  $idx = 0;
+  $res = array();
+  for ($i=0; $idx<$len; $i++) {
+    $sub = substr($string, $idx, 2);
+    $res[$i] = $sub;
+    $idx += 2;
+    if ($i+1 == $levels) {
+      $res[$i+1] = substr($string, $idx);
+      break;
+    }
+  }
+  return $res;
+}
+
+function splitpostnum($postnum, &$start, &$end) {
+  $postnum = $postnum . "";
+  $len = strlen($postnum);
+  if ($len < 2) {
+    $start = '00';
+    if (!$postnum) $postnum = '00';
+    if (strlen($postnum) == 1) $postnum = "0$postnum";
+    $end = $postnum;
+  } else {
+    $start = substr($postnum, 0, $len-2);
+    $end = substr($postnum, $len-2);
+  }
+}
+
 
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1/Apache 2.0
