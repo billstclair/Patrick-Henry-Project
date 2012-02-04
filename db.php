@@ -213,41 +213,125 @@ class db {
 class infomapper {
   var $fsdb;
   var $dirstack = array();
-  var $contentliststack = array();
+  var $contentsliststack = array();
   var $dir = '';
-  var $contentlist = null;
-  var $content = array();
+  var $contentslist = null;
+  var $contents = array();
 
   // todo: process $start arg
-  function infomapper($fsdb, $start=false) {
+  function infomapper($fsdb, $start=FALSE) {
     $this->fsdb = $fsdb;
-    $contents = $fsdb->contents('');
-    $this->contentlist = $this->sortcontents($contents);
+    if ($start) $this->initstart($start);
+    else {
+      $contents = $fsdb->contents('');
+      $this->contentslist = $this->sortcontents($contents);
+    }
+  }
+
+  function initstart($start) {
+    $fsdb = $this->fsdb;
+    $dirstack = array();
+    $contentsliststack = array();
+    $dir = '';
+    $this->splitend($start, $prefix, $idx);
+    $path = $this->split($prefix);
+    $pathlen = count($path);
+    $maxidx = $pathlen-1;
+    for ($i=0; $i<$pathlen; $i++) {
+      $pathelt = $path[$i];
+      $contentslist = $fsdb->contents($dir);
+      $idx = $this->findex($contentslist);
+      if ($idx == $maxi) {
+        $contentslist = array_slice($contentslist, $idx);
+        $pathelt = 'f'.$pathelt;
+        $len = count($contentslist);
+        for ($j=0; $j<$len; $j++) {
+          $elt = $contentslist[$i];
+          if ($pathelt <= $elt) {
+            $contentslist = array_slice($contentslist, $j+1);
+            if ($pathelt == $elt) {
+              $thisdir = $dir ? "$dir/$pathelt" : $pathelt;
+              $contents = $fsdb->get($thisdir);
+              $k = 0;
+              foreach ($contents as $key => $value) {
+                if ($key <= $idx) break;
+                $k++;
+              }
+              $contents = array_slice($contents, $k);
+            } else {
+              $contents = array();
+            }
+            if (count($contentslist) == 0) {
+              if (count($dirstack) > 0) {
+                $dir = array_pop($dirstack);
+                $contentslist = array_pop($contentsliststack);
+              }
+            }
+            break 2;
+          }
+        }
+      } else {
+        $contentslist = array_slice($contentslist, 0, $idx);
+        $len = count($contentslist);
+        for ($j=0; $j<$len; $j++) {
+          $elt = $contentslist[$i];
+          if ($pathelt <= $elt) {
+            $contentslist = array_slice($contentslist, $j+1);
+            if ($pathelt == $elt) {
+              if (count($contentslist) > 0) {
+                $dirstack[] = $dir;
+                $contentsliststack[] = $contentslist;
+              }
+              $dir = $dir ? "$dir/$elt" : $elt;
+            } else {
+              if (count($contentslist) == 0) {
+                if (count($dirstack) == 0) {
+                  $dir = array_pop($dirstack);
+                  $contentslist = array_pop($contentslist);
+                }
+                $contents = array();
+                break 2;
+              }
+            }
+          }
+        }
+      }
+    }
+    $this->dirstack = $dirstack;
+    $this->contentsliststack = $contentsliststack;
+    $this->dir = $dir;
+    $this->contents = $contents;
+  }
+
+  function findex($contents) {
+    for ($i=0; $i<$len; $i++) {
+      $name = $contents[$i];
+      if (substr($name, 0, 1) == 'f') return $i;
+    }
+    return FALSE;
   }
 
   function sortcontents($contents) {
     $len = count($contents);
     $fpos = false;
-    for ($i=0; $i<$len; $i++) {
-      $name = $contents[$i];
-      if (substr($name, 0, 1) == 'f') {
+    $i = $this->findex($contents);
+    if (!$i===FALSE) {
         return array_merge(array_slice($contents, $i),
                            array_slice($contents, 0, $i));
-      }
     }
     return $contents;
   }
 
   function isempty() {
-    return count($this->content)==0 && count($this->contentlist)==0;
+    return count($this->contents)==0 && count($this->contentslist)==0;
   }
 
   function next() {
     $fsdb = $this->fsdb;
-    if (count($this->content) > 0) return array_shift($this->content);
+    if (count($this->contents) > 0) return array_shift($this->contents);
     while (true) {
       if ($this->isempty()) return null;
-      $next = array_shift($this->contentlist);
+      $next = array_shift($this->contentslist);
       $key = $this->dir;
       if ($key) $key .= '/';
       $key .= $next;
@@ -256,30 +340,30 @@ class infomapper {
         if ($this->isempty()) {
           if (count($this->dirstack) > 0) {
             $this->dir = array_pop($this->dirstack);
-            $this->contentlist = array_pop($this->contentliststack);
+            $this->contentslist = array_pop($this->contentsliststack);
           }
         }
-        $content = unserialize($res);
-        if (!is_array($content)) return $content;
-        $res = array_shift($content);
-        $this->content = $content;
+        $contents = unserialize($res);
+        if (!is_array($contents)) return $contents;
+        $res = array_shift($contents);
+        $this->contents = $contents;
         return $res;
       }
-      $contentlist = $this->sortcontents($fsdb->contents($key));
-      if (count($contentlist) == 0) {
-        if (count($this->contentlist) == 0) {
+      $contentslist = $this->sortcontents($fsdb->contents($key));
+      if (count($contentslist) == 0) {
+        if (count($this->contentslist) == 0) {
           if (count($this->dirstack) == 0) return null;
           $this->dir = array_pop($this->dirstack);
-          $this->contentlist = array_pop($this->contentliststack);
+          $this->contentslist = array_pop($this->contentsliststack);
         }
         next;
       }
-      if (count($this->contentlist) > 0) {
+      if (count($this->contentslist) > 0) {
         $this->dirstack[] = $this->dir;
-        $this->contentliststack[] = $this->contentlist;
+        $this->contentsliststack[] = $this->contentslist;
       }
       $this->dir = $key;
-      $this->contentlist = $contentlist;
+      $this->contentslist = $contentslist;
     }
   }
 }
