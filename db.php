@@ -9,6 +9,7 @@ class db {
 
   var $datadb = NULL;
   var $infodb = NULL;
+  var $modinfodb = NULL;
   var $emaildb = NULL;
   var $rand = NULL;
 
@@ -18,6 +19,7 @@ class db {
     global $emaildir;
     $this->datadb = new FSDB($datadir);
     $this->infodb = new FSDB($infodir);
+    $this->modinfodb = new FSDB($modinfodir);
     $this->emaildb = new FSDB($emaildir);
     $this->rand = new LoomRandom();
   }
@@ -78,25 +80,40 @@ class db {
     }
   }
 
-  function getinfo($postnum) {
-    $infodb = $this->infodb;
+  function getinfo_internal($fsdb, $postnum) {
     $this->splitend($postnum, $prefix, $idx);
     $path = $this->infopath($prefix);
-    $str = $infodb->get($path);
+    $str = $fsdb->get($path);
     $arr = unserialize($str);
     return $arr[$idx];
   }
 
-  function putinfo($postnum, $info) {
-    $infodb = $this->infodb;
+  
+  function getinfo($postnum) {
+    return $this->getinfo_internal($this->infodb, $postnum);
+  }
+
+  function getmodinfo($postnum) {
+    return $this->getinfo_internal($this->modinfodb, $postnum);
+  }
+
+  function putinfo_internal($fsdb, $postnum, $info) {
     $this->splitend($postnum, $prefix, $idx);
     $path = $this->infopath($prefix);
-    $str = $infodb->get($path);
+    $str = $fsdb->get($path);
     $arr = $str ? unserialize($str) : array();
     $arr[$idx] = $info;
     $str = serialize($arr);
-    $infodb->put($path, '');    // Work around fsdb bug
-    $infodb->put($path, $str);
+    $fsdb->put($path, '');    // Work around fsdb bug
+    $fsdb->put($path, $str);
+  }
+
+  function putinfo($postnum, $info) {
+    $this->putinfo_internal($this->infodb, $postnum, $info);
+  }
+
+  function putmodinfo($postnum, $info) {
+    $this->putinfo_internal($this->modinfodb, $postnum, $info);
   }
 
   function getemailpost($email) {
@@ -177,6 +194,73 @@ class db {
       sort($freelist, SORT_NUMERIC);
       $freelist = implode($freelist, ',');
       $this->putfreelist($freelist);
+    }
+  }
+}
+
+class infomapper {
+  var $fsdb;
+  var $dirstack = array();
+  var $contentliststack = array();
+  var $dir = '';
+  var $contentlist = null;
+
+  function infomapper($fsdb, $start=false) {
+    $this->fsdb = $fsdb;
+    $contents = $fsdb->contents('');
+    $this->contentlist = $this->sortcontents($contents);
+  }
+
+  function sortcontents($contents) {
+    $len = count($contents);
+    $fpos = false;
+    for ($i=0; $i<$len; $i++) {
+      $name = $contents[$i];
+      if (substr($name, 0, 1) == 'f') {
+        return array_merge(array_slice($contents, $i),
+                           array_slice($contents, 0, $i));
+      }
+    }
+    return $contents;
+  }
+
+  function isempty() {
+    return count($this->contentlist)==0;
+  }
+
+  function next() {
+    if ($this->isempty()) return null;
+    $fsdb = $this->fsdb;
+    while (true) {
+      $next = array_shift($this->contentlist);
+      $key = $this->dir;
+      if ($key) $key .= '/';
+      $key .= $next;
+      if (substr($next, 0, 1) == 'f') {
+        $res = $fsdb->get($key);
+        if ($this->isempty()) {
+          if (count($this->dirstack) > 0) {
+            $this->dir = array_pop($this->dirstack);
+            $this->contentlist = array_pop($this->contentliststack);
+          }
+        }
+        return $res;
+      }
+      $contentlist = $this->sortcontents($fsdb->contents($key));
+      if (count($contentlist) == 0) {
+        if (count($this->contentlist) == 0) {
+          if (count($this->dirstack) == 0) return null;
+          $this->dir = array_pop($this->dirstack);
+          $this->contentlist = array_pop($this->contentliststack);
+        }
+        next;
+      }
+      if (count($this->contentlist) > 0) {
+        $this->dirstack[] = $this->$dir;
+        $this->contentliststack[] = $this->contentlist;
+        $this->dir = $key;
+        $this->contentlist = $contentlist;
+      }
     }
   }
 }
