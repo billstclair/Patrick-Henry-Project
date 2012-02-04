@@ -12,11 +12,10 @@ class db {
   var $modinfodb = NULL;
   var $emaildb = NULL;
   var $rand = NULL;
+  var $scrambler = NULL;
 
   function db() {
-    global $datadir;
-    global $infodir;
-    global $emaildir;
+    global $datadir, $infodir, $modinfodir, $emaildir;
     $this->datadb = new FSDB($datadir);
     $this->infodb = new FSDB($infodir);
     $this->modinfodb = new FSDB($modinfodir);
@@ -26,12 +25,17 @@ class db {
 
   function getscrambler() {
     global $scramblerkey;
+
+    $res = $this->scrambler;
+    if ($res) return $res;
+
     $datadb = $this->datadb;
     $res = $datadb->get($scramblerkey);
     if (!$res) {
       $res = sha1($this->rand->urandom_bytes(20));
       $datadb->put($scramblerkey, $res);
     }
+    $this->scrambler = $res;
     return $res;
   }
 
@@ -204,7 +208,9 @@ class infomapper {
   var $contentliststack = array();
   var $dir = '';
   var $contentlist = null;
+  var $content = array();
 
+  // todo: process $start arg
   function infomapper($fsdb, $start=false) {
     $this->fsdb = $fsdb;
     $contents = $fsdb->contents('');
@@ -225,13 +231,14 @@ class infomapper {
   }
 
   function isempty() {
-    return count($this->contentlist)==0;
+    return count($this->content)==0 && count($this->contentlist)==0;
   }
 
   function next() {
-    if ($this->isempty()) return null;
     $fsdb = $this->fsdb;
+    if (count($this->content) > 0) return array_shift($this->content);
     while (true) {
+      if ($this->isempty()) return null;
       $next = array_shift($this->contentlist);
       $key = $this->dir;
       if ($key) $key .= '/';
@@ -244,6 +251,10 @@ class infomapper {
             $this->contentlist = array_pop($this->contentliststack);
           }
         }
+        $content = unserialize($res);
+        if (!is_array($content)) return $content;
+        $res = array_shift($content);
+        $this->content = $content;
         return $res;
       }
       $contentlist = $this->sortcontents($fsdb->contents($key));
@@ -256,84 +267,14 @@ class infomapper {
         next;
       }
       if (count($this->contentlist) > 0) {
-        $this->dirstack[] = $this->$dir;
+        $this->dirstack[] = $this->dir;
         $this->contentliststack[] = $this->contentlist;
-        $this->dir = $key;
-        $this->contentlist = $contentlist;
       }
+      $this->dir = $key;
+      $this->contentlist = $contentlist;
     }
   }
 }
-
-// Test code
-
-/*
-$db = new db();
-
-$db->putinfo(1, "one");
-$db->putinfo(2, "two");
-$db->putinfo(3, "three");
-$db->putinfo(101, "one oh one");
-$db->putinfo(102, "one oh two");
-$db->putinfo(103, "one oh three");
-$db->putinfo(10001, "ten thousand one");
-$db->putinfo(10002, "ten thousand two");
-$db->putinfo(10003, "ten thousand three");
-$db->putinfo(20010001, "twenty million 10 thousand one");
-$db->putinfo(20010002, "twenty million 10 thousand two");
-$db->putinfo(20010003, "twenty million 10 thousand three");
-
-function getit($x) {
-  global $db;
-  $info = $db->getinfo($x);
-  echo "$x: $info\n";
-}
-
-getit(1);
-getit(2);
-getit(3);
-getit(101);
-getit(102);
-getit(103);
-getit(10001);
-getit(10002);
-getit(10003);
-getit(20010001);
-getit(20010002);
-getit(20010003);
-
-*/
-
-/*
-
-$db = new db();
-
-$posts = array();
-for ($i=0; $i<20; $i++) {
-  $posts[$i] = $db->nextpostnum();
-}
-print_r($posts);
-//exit();
-$db->freepostnum($posts[19]);
-$db->freepostnum($posts[18]);
-$db->freepostnum($posts[3]);
-$db->freepostnum($posts[1]);
-$count = $db->getcount();
-$freelist = $db->getfreelist();
-echo "count: $count, freelist: $freelist\n";
-
-*/
-
-/*
-$db = new db();
-
-$db->putemailpost("bill@billstclair.com", 1);
-$db->putemailpost("billstclair@gmail.com", 2);
-$db->putemailpost("wws@clozure.com", 3);
-echo $db->getemailpost("bill@billstclair.com") . ', ' .
-$db->getemailpost("billstclair@gmail.com") . ', ' .
-$db->getemailpost("wws@clozure.com") . "\n";
-*/
 
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1/Apache 2.0
