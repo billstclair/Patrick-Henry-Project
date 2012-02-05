@@ -5,6 +5,7 @@
 require_once "db.php";
 
 $db = new db();
+$errcnt = 0;
 
 function putit($x) {
   global $db;
@@ -30,9 +31,12 @@ function echogetinfo($x) {
 }
 
 function get1($num) {
-  global $db;
+  global $db, $errcnt;
   $x = $db->getinfo($num);
-  if ($x != $num) echo "getinfo($num) != $x\n";
+  if ($x != $num) {
+    echo "getinfo($num) != $x\n";
+    $errcnt++;
+  }
 }
 
 function get3($num) {
@@ -63,13 +67,18 @@ $putinfonums =
         3020001, 3020101, 3020201, 3020301);
 
 function test_putinfo($get=TRUE) {
-  global $db, $putinfonums;
+  global $db, $putinfonums, $errcnt;
                
-  put3s($putinfonums);
+  $errcnt = 0;
+
+  put3s(array_reverse($putinfonums));
 
   if (!$get) return;
 
   get3s($putinfonums);
+
+  if ($errcnt) echo "test_putinfo errors: $errcnt\n";
+  else echo "test_putinfo: no errors\n";
 }
 
 function test_nextpostnum() {
@@ -113,16 +122,19 @@ function test_infomapper() {
 }
 
 function test1map($m, $num) {
+  global $errcnt;
   $val = $m->next();
-  if ($num != $val) echo "$num != $val\n";
-  //else echo "$num\n";
+  if ($num != $val) {
+    echo "$num != $val\n";
+    $errcnt++;
+  }
 }
 
 function test_infomapper_start($idx) {
-  global $db, $putinfonums;
+  global $db, $putinfonums, $errcnt;
 
+  $errcnt = 0;
   $start = $putinfonums[$idx];
-  echo "start: $start\n";
   $nums = array_slice($putinfonums, $idx);
 
   $m = $db->infomapper($start);
@@ -136,6 +148,8 @@ function test_infomapper_start($idx) {
     print_r($m);
     echo "Not empty\n";
   }
+  if ($errcnt) echo "test_infomapper_start($start), errors: $errcnt\n";
+  else echo "test_infomapper_start($start): no errors\n";
 }
 
 test_putinfo();

@@ -27,6 +27,7 @@ $page = mqreq('page');
 
 // Form parameters
 $cmd = mqreq('cmd');
+$postnum = mqreq('postnum');
 $youtube = mqreq('youtube');
 $video = mqreq('video');
 $name = mqreq('name');
@@ -40,6 +41,8 @@ $input = mqreq('input');
 $time = mqreq('time');
 $hash = mqreq('hash');
 $info = mqreq('info');
+
+// Submission buttons
 $submit = mqreq('submit');
 $edit = mqreq('edit');
 $forgot = mqreq('forgot');
@@ -70,7 +73,7 @@ $onloadid = NULL;
     <div style="width: 60em; margin: 4em auto 4em auto; border: 1px solid blue; padding: 1em; background-color: white;">
       <p style="text-align: center; font-weight: bold; font-size: 125%;">
         The Patrick Henry Project</p>
-      <table>
+      <table style="width: 100%">
         <tr>
           <td valign="top">
             <div>
@@ -78,7 +81,7 @@ $onloadid = NULL;
             </div>
           </td>
           <td valign="top">
-            <div style="margin-left: 2em;">
+            <div style="margin-left: 2em; margin-right: 2em;">
 <?php content(); ?>
             </div>
           </td>
@@ -87,7 +90,7 @@ $onloadid = NULL;
       <p style="text-align:center; font-size: 80%;">
         Copyright &copy 2012 Bill St. Clair &lt;bill at billstclair dot com>
       </p>
-      <div style="text-align: center">
+      <div style="text-align: center;">
         <p style="font-size: 80%">
           Donations support this site and <a href="http://freedomoutlaws.com/">FreedomOutlaws.com</a>
         </p>
@@ -118,30 +121,68 @@ function left_column() {
 }
 
 function content() {
-  global $page, $cmd;
+  global $page, $cmd, $postnum;
   //  echo "<pre>"; print_r($_REQUEST); echo "</pre>\n";
   if ($cmd == 'post') dopost();
   elseif ($cmd == 'finishpost') finishpost();
   elseif ($cmd == 'register') register();
   elseif ($cmd == 'edit') doedit();
+  elseif ($page == 'view') view();
   elseif ($page == 'videos') videos();
   elseif ($page == 'post') post();
   elseif ($page == 'edit') edit();
   else require "index.inc";
 }
 
+function view($post=NULL) {
+  global $postnum, $db;
+  global $video, $name, $url;
+
+  if (!$post) $post = $postnum;
+
+  $info = $db->getinfo($post);
+  $modp = FALSE;
+  if (!$info) {
+    $info = $db->getmodinfo($post);
+    if ($info) $modp = TRUE;
+  }
+
+  if (!$info) {
+    echo "<span style='color: red; font-weight: bold;'>Post not found:</span> $post";
+    return;
+  }
+
+  $video = $info['video'];
+  $name = @$info['name'];
+  $url = @$info['url'];
+
+  displayPost();
+}
+
 function dopost() {
    global $youtube, $video, $name, $email, $url, $password, $verify;
    global $input, $time, $hash;
    global $cap, $keepcap, $onloadid;
+   global $db, $postnum;
 
    // Validate captcha
-   $keepcap = FALSE;
-   if (!$cap->verify($input, $time, $hash, getscrambler())) {
-     $onloadid = 'input';
-     return post('Wrong answer to simple arithmetic problem');
+   if (!$postnum) {
+     $keepcap = FALSE;
+     if (!$cap->verify($input, $time, $hash, getscrambler())) {
+       $onloadid = 'input';
+       return post('Wrong answer to simple arithmetic problem');
+     }
+     $keepcap = TRUE;
    }
-   $keepcap = TRUE;
+
+   // validate email
+   $post = $db->getemailpost($email);
+   if ($post) {
+     if (!$db->verify_post_password($post, $password)) {
+       return post("Invalid email or password");
+     }
+     $postnum = $post;
+   }
 
    // validate YouTube URL
    $yt = parse_url($youtube);
@@ -177,7 +218,7 @@ function dopost() {
      $onloadid = 'password';
      return post('Password is required');
    }
-   if ($password != $verify) {
+   if (!$postnum && $password != $verify) {
      $onloadid = 'password';
      return post('Passwords do not match');
    }
@@ -191,16 +232,18 @@ function dopost() {
    displayPost();
 }
 
-function displayPost() {
+function displayPost($newpostp=FALSE) {
    global $youtube, $video, $name, $email, $url, $password, $verify;
    global $string, $input, $time, $hash;
+   global $postnum;
 
 ?>
-              <center>
+              <div style="text-align: center; margin-left: auto; margin-right: auto; width: 560px;">
                 <p>
-                  <iframe width="560" height="315" src="<?php echo "http://www.youtube.com/embed/$video"; ?>" frameborder="0" allowfullscreen></iframe></p>
-                <a href="<?php echo "http://youtu.be/$video"; ?>">
-                  <?php echo "youtu.be/$video"; ?></a><br/>
+                  <iframe width="560" height="315" src="<?php echo "http://www.youtube.com/embed/$video"; ?>" frameborder="0" allowfullscreen></iframe>
+                </p>
+                <a href="<?php echo "http://youtu.be/$video"; ?>"><?php echo "youtu.be/$video"; ?></a>
+                <br/>
                 <?php if ($url) {
   echo "<a href='$url'>";
   if ($name) echo hsc($name);
@@ -209,43 +252,109 @@ function displayPost() {
 } elseif ($name) echo hsc($name);
 ?>
                 <form method='post' action='./'>
+<?php
+  if ($email && $password) {
+?>
                   <input type='hidden' name='cmd' value='finishpost'/>
+<?php
+  if ($hash) {
+?>
                   <input type='hidden' name='string' value='<?php echo $string; ?>'/>
                   <input type='hidden' name='input' value='<?php echo $input; ?>'/>
                   <input type='hidden' name='time' value='<?php echo $time; ?>'/>
                   <input type='hidden' name='hash' value='<?php echo $hash; ?>'/>
+<?php
+  }
+?>
                   <input type='hidden' name='youtube' value='<?php echo hsc($youtube); ?>'/>
-                  <input type='hidden' name='video' value='<?php echo hsc($video); ?>'/>
                   <input type='hidden' name='email' value='<?php echo hsc($email); ?>'/>
                   <input type='hidden' name='password' value='<?php echo hsc($password); ?>'/>
+<?php
+  } else {
+?>
+                  <input type='hidden' name='page' value='post'/>
+<?php
+  }
+  if ($postnum) {
+?>
+                  <input type='hidden' name='postnum' value='<?php echo $postnum; ?>'/>
+<?php
+  }
+?>
+                  <input type='hidden' name='video' value='<?php echo hsc($video); ?>'/>
                   <input type='hidden' name='name' value='<?php echo hsc($name); ?>'/>
                   <input type='hidden' name='url' value='<?php echo hsc($url); ?>'/>
                   <br/>
+<?php
+  if ($email && $password) {
+?>
                   <input type='submit' name='submit' value='Post'/>
+<?php
+  }
+?>
                   <input type='submit' name='edit' value='Edit'/>
                 </form>
-              </center>
+              </div>
+<?php
+  if ($email && $password) {
+?>
               <p>
                 Click the "Post" button to verify your video and information. Click on the "Edit" button to change something before posting.
               </p>
 <?php
+  } elseif ($newpostp) {
+?>
+              <p>
+                Your video information has been submitted for moderation. It will appear in the list of videos after approval.
+              </p></p>
+                <a href='./?page=view&postnum=<?php echo $postnum; ?>'>
+                  Click here</a> for your video's permanent page.</a>
+              </p>
+<?php
+  } else {
+?>
+              <p>
+                Click the edit button to edit this video.
+              </p>
+<?php
+  }
 }
 
 function finishpost() {
    global $youtube, $video, $email, $password, $verify, $name, $url;
    global $keepcap, $string, $input, $time, $hash;
    global $submit, $edit, $cap, $mcrypt;
+   global $db, $postnum;
 
-   $scrambler = getscrambler();
-   if (!$cap->verify($input, $time, $hash, $scrambler)) {
-     $onloadid = 'input';
-     return post('Wrong answer to simple arithmetic problem');
+   // if the email already exists, and the password verifies,
+   // post a change for moderation
+   $postnum = $db->getemailpost($email);
+   if ($postnum) {
+     if (!$db->verify_post_password($postnum, $password)) {
+       return post('Invalid email or password');
+     }
+     if (!$edit) {
+       putmodinfo($postnum, $video, $email, $password, $name, $url);
+       echo "<p>Your updated video information has been saved. It will appear on the site after a moderator approves it.</p>";
+       return;
+     }
    }
+
+   if (!$postnum) {
+     $scrambler = getscrambler();
+     if (!$cap->verify($input, $time, $hash, $scrambler)) {
+       $onloadid = 'input';
+       return post('Wrong answer to simple arithmetic problem');
+     }
+   }
+
    if ($edit) {
      $keepcap = TRUE;
      $verify = $password;
      return post();
    }
+
+   // Send a confirmation email
    $reginfo = array('video' => $video,
                     'email' => $email,
                     'password' => $password);
@@ -253,13 +362,8 @@ function finishpost() {
    if ($url) $reginfo['url'] = $url;
    $info = serialize($reginfo);
    $info = urlencode($mcrypt->encrypt($info, $scrambler));
-   $host = @$_SERVER['HTTP_HOST'];
-   if (!$host) $host = "patrickhenryproject.org";
-   $uri = @$_SERVER['REQUEST_URI'];
-   $pos = strpos($uri, "?");
-   if (!($pos === FALSE)) $uri = substr($uri, 0, $pos);
-   $http = @$_SERVER['HTTPS'] ? "https" : "http";
-   $fullurl = "$http://$host$uri?cmd=register&info=$info";
+   $baseurl = baseurl();
+   $fullurl = "$baseurl?cmd=register&info=$info";
 
    $to = $email;
    $subject = "Post verification from The Patrick Henry Project";
@@ -287,18 +391,29 @@ function finishpost() {
 <?php
 }
 
+function baseurl() {
+  $host = @$_SERVER['HTTP_HOST'];
+  if (!$host) $host = "patrickhenryproject.org";
+  $uri = @$_SERVER['REQUEST_URI'];
+  $pos = strpos($uri, "?");
+  if (!($pos === FALSE)) $uri = substr($uri, 0, $pos);
+  $http = @$_SERVER['HTTPS'] ? "https" : "http";
+  return "$http://$host$uri";
+}
+
 function register() {
   global $info;
   global $youtube, $video, $email, $password, $verify, $name, $url;
   global $keepcap, $string, $input, $time, $hash;
   global $submit, $edit, $cap, $mcrypt;
+  global $db, $postnum;
   
   $info = @$mcrypt->decrypt($info, getscrambler());
   $reginfo = @unserialize($info);
   if (!$reginfo) {
     return post("Malformed registration info.");
   }
-  echo "<pre>"; print_r($reginfo); echo "</pre>\n";
+  //echo "<pre>"; print_r($reginfo); echo "</pre>\n";
   $video = $reginfo['video'];
   $youtube = "http://youtu.be/$video";
   $email = $reginfo['email'];
@@ -306,7 +421,37 @@ function register() {
   $verify = $password;
   $name = $reginfo['name'];
   $url = $reginfo['url'];
-  post("This site doesn't yet save posts. Soon.");
+
+  if ($db->getemailpost($email)) {
+    // Don't give away email or password to stealer of verification message
+    $email = '';
+    $password = '';
+    $verify = '';
+    return edit('Email already registered');
+  }
+
+  $postnum = $db->nextpostnum();
+  putmodinfo($postnum, $video, $email, $password, $name, $url);
+
+  $email = NULL;
+  $password = NULL;
+  displaypost(true);
+}
+
+function putmodinfo($postnum, $video, $email, $password, $name, $url) {
+  global $db;
+
+  $passwordhash = $db->passwordhash($password, $salt);
+  $info = array('postnum' => $postnum,
+                'video' => $video,
+                'emailhash' => sha1($email),
+                'salt' => $salt,
+                'passwordhash' => $passwordhash);
+  if ($name) $info['name'] = $name;
+  if ($url) $info['url'] = $url;
+
+  $db->putmodinfo($postnum, $info);
+  $db->putemailpost($email, $postnum);
 }
 
 function doedit() {
@@ -316,11 +461,14 @@ function doedit() {
 }
 
 function post($error=null) {
-  global $youtube, $name, $url, $email, $password, $verify;
+  global $youtube, $video, $name, $url, $email, $password, $verify;
   global $cap, $keepcap, $default_error, $onloadid;
+  global $postnum;
 
-  if (!$error) $error = $default_error;
+   //if (!$error) $error = $default_error;
   if (!$onloadid) $onloadid = 'youtube';
+
+  if (!$youtube && $video) $youtube = "http://youtu.be/$video";
 
   $gen = gencap();
   $string = $gen['string'];
@@ -338,9 +486,19 @@ function post($error=null) {
               <p>
                 <form method='post' action='./'>
                   <input type='hidden' name='cmd' value='post'/>
+<?php
+  if ($postnum) {
+?>
+                  <input type='hidden' name='postnum' value='<?php echo $postnum; ?>'/>
+<?php
+  } else {
+?>
                   <input type='hidden' name='string' value='<?php echo $string; ?>'/>
                   <input type='hidden' name='time' value='<?php echo $time; ?>'/>
                   <input type='hidden' name='hash' value='<?php echo $hash; ?>'/>
+<?php
+  }
+?>
                   <table>
                     <tr>
                       <td></td>
@@ -351,18 +509,30 @@ function post($error=null) {
                     </tr><tr>
                       <td>YouTube Video:</td>
                       <td><input type='text' name='youtube' id='youtube' size='40' value='<?php echo $youtube; ?>'/></td>
+<?php
+  if (!$postnum) {
+?>
                     </tr><tr>
                       <td style='text-align: right;'><?php echo $string; ?> =</td>
                       <td><input type='text' name='input' id='input' size='2' value='<?php echo $input; ?>'/></td>
+<?php
+  }
+?>
                     </tr><tr>
                       <td style="text-align: right;">Email:</td>
                       <td><input type='text' name='email' id='email' size='40' value='<?php echo $email; ?>'/></td>
                     </tr><tr>
                       <td style="text-align: right;">Password:</td>
                       <td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
+<?php
+  if (!$postnum) {
+?>
                     </tr><tr>
                       <td style="text-align: right;">Password Again:</td>
                       <td><input type='password' name='verify' id='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
+<?php
+  }
+?>
                     </tr><tr>
                       <td></td>
                       <td style="color: blue;">Optional</td>
@@ -379,6 +549,15 @@ function post($error=null) {
                   </table>
                 </form>
               </p>
+<?php
+   if ($postnum) {
+?>
+              <p>
+                To make changes to your post, fill in your "Email" and "Password" and change your "YouTube Video", "Name", and "Web Site" as desired. Click the "Submit" button, and you will be able to view your new information before approving the change.
+              </p>
+<?php
+  } else {
+?>
               <p>
                 Fill in the fields in the "Required" section. For "Youtube Video", copy the address from your browser's address bar, or from YouTube's "Share" pop-up, and paste it here. It should look something like one of these two examples::
               </p>
@@ -398,9 +577,10 @@ function post($error=null) {
               <p>
                 Finally, press the "Submit" button.
 <?php
+  }
 }
 
-function edit() {
+function edit($error=null) {
   global $email, $password, $newpass, $verify;
   global $cap, $onloadid;
 
@@ -418,6 +598,9 @@ function edit() {
                 <p>
                   <table>
                     <tr>
+                      <td></td>
+                      <td><span style='color: red;'><?php echo $error; ?></span></td>
+                    </tr><tr>
                       <td></td>
                       <td style="color: blue;">Required</td>
                     </tr><tr>

@@ -56,8 +56,9 @@ class db {
     splitpostnum($postnum, $prefix, $idx);
     $path = $this->infopath($prefix);
     $str = $fsdb->get($path);
+    if (!$str) return NULL;
     $arr = unserialize($str);
-    return $arr[$idx];
+    return @$arr[$idx];
   }
 
   
@@ -177,6 +178,23 @@ class db {
       $this->putfreelist($freelist);
     }
   }
+
+  function passwordhash($password, &$salt) {
+    $salt = sha1($this->rand->urandom_bytes(20));
+    return sha1(sha1($password) ^ $salt);
+  }
+
+  function verify_password($password, $salt, $hash) {
+    return $hash == sha1(sha1($password) ^ $salt);
+  }
+
+  function verify_post_password($postnum, $password) {
+    $info = $this->getinfo($postnum);
+    if (!$info) $info = $this->getmodinfo($postnum);
+    if (!$info) return false;
+    return $this->verify_password($password, $info['salt'], $info['passwordhash']);
+  }
+
 }
 
 class infomapper {
@@ -377,6 +395,7 @@ function splitpostnum($postnum, &$start, &$end) {
     $end = substr($postnum, $len-2);
   }
 }
+
 
 
 /* ***** BEGIN LICENSE BLOCK *****
