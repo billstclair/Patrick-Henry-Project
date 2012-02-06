@@ -111,8 +111,11 @@ class db {
   }
 
   function putemailpost($email, $postnum) {
+    $this->putemailhashpost(sha1($email), $postnum);
+  }
+
+  function putemailhashpost($hash, $postnum) {
     $emaildb = $this->emaildb;
-    $hash = sha1($email);
     $path = $this->infopath($hash, 2, '');
     $emaildb->put($path, $postnum);
   }

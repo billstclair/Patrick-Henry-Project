@@ -41,6 +41,7 @@ $input = mqreq('input');
 $time = mqreq('time');
 $hash = mqreq('hash');
 $info = mqreq('info');
+$cnt = mqreq('cnt');
 
 // Submission buttons
 $submit = mqreq('submit');
@@ -171,13 +172,13 @@ function left_column() {
 
 function content() {
   global $page, $cmd, $postnum;
-  //  echo "<pre>"; print_r($_REQUEST); echo "</pre>\n";
-  if ($cmd == 'post') dopost();
+  if     ($cmd == 'post') dopost();
   elseif ($cmd == 'finishpost') finishpost();
   elseif ($cmd == 'register') register();
   elseif ($cmd == 'edit') doedit();
   elseif ($cmd == 'delete') dodelete();
   elseif ($cmd == 'forgot') forgot(TRUE);
+  elseif ($cmd == 'moderate') domoderate();
   elseif ($page == 'view') view();
   elseif ($page == 'videos') videos();
   elseif ($page == 'post') post();
@@ -376,8 +377,8 @@ function displayPost($newpostp=FALSE) {
 <?php
   } else {
 ?>
-              <p>
-                Click the edit button to edit this video.
+              <p style="text-align: center;">
+                Click the "Edit" button to edit this video.
               </p>
 <?php
   }
@@ -428,8 +429,8 @@ function finishpost() {
    $reginfo = array('video' => $video,
                     'email' => $email,
                     'password' => $password);
-   if ($name) $reginfo['name'] = $name;
-   if ($url) $reginfo['url'] = $url;
+   if ($name) @$reginfo['name'] = $name;
+   if ($url) @$reginfo['url'] = $url;
    $info = serialize($reginfo);
    $info = urlencode($mcrypt->encrypt($info, $scrambler));
    $baseurl = baseurl();
@@ -488,8 +489,8 @@ function register() {
   $email = $reginfo['email'];
   $password = $reginfo['password'];
   $verify = $password;
-  $name = $reginfo['name'];
-  $url = $reginfo['url'];
+  $name = @$reginfo['name'];
+  $url = @$reginfo['url'];
 
   if ($db->getemailpost($email)) {
     // Don't give away email or password to stealer of verification message
@@ -643,7 +644,6 @@ function forgot($doit=false) {
   }
   $postnum = $pwdinfo['postnum'];
   $key = $pwdinfo['key'];
-  $modp = false;
   $postinfo = getinfo($postnum, $modp);
   if (!$postinfo || $key != @$postinfo['key']) {
     echo $invalidmsg;
@@ -794,6 +794,9 @@ function post($error=null) {
 <?php
    if ($postnum) {
 ?>
+              </p>
+                <a href='./?page=view&postnum=<?php echo $postnum; ?>'>Click here</a> for your video's permanent page.</a>
+              </p>
               <p>
                 To make changes to your post, fill in your "Email" and "Password" and change your "YouTube Video", "Name", and "Web Site" as desired. Click the "Submit" button, and you will be able to view your new information before approving the change.
               </p>
@@ -947,22 +950,20 @@ function moderate() {
     $postnum = $info['postnum'];
     $video = $info['video'];
     $videourl = "http://youtu.be/$video";
-    $name = $info['name'];
-    if (!$name) $name = "&nbsp;";
-    $url = $info['url'];
-    if (!$url) $url = "&nbsp;";
+    $name = @$info['name'];
+    $url = @$info['url'];
 ?>
                   <tr>
                     <td><input type='radio' name='<?php echo $radioname; ?>' value='ok' checked='checked'/></td>
                     <td><input type='radio' name='<?php echo $radioname; ?>' value='x'/></td>
                     <td><input type='radio' name='<?php echo $radioname; ?>' value='0'/></td>
                     <td style='text-align: right;'>
-                      <input type='hidden' name='<? echo $postname; ?>' value='<?php echo $postnum; ?>'/>
+                      <input type='hidden' name='<?php echo $postname; ?>' value='<?php echo $postnum; ?>'/>
                       <a target='_blank' href='./?page=view&postnum=<?php echo $postnum; ?>'><?php echo $postnum; ?></a>
                     </td>
                     <td><a target='_blank' href='<?php echo $videourl; ?>'><?php echo hsc($video); ?></a></td>
-                    <td><?php echo hsc($name); ?></td>
-                    <td><a target='_blank' href='<?php echo hsc($url); ?>'><?php echo hsc($url); ?></a></td>
+                    <td><?php echo $name ? hsc($name) : "&nbsp;"; ?></td>
+                    <td><a target='_blank' href='<?php echo $url ? hsc($url) : "&nbsp;"; ?>'><?php echo hsc($url); ?></a></td>
                   </tr>                    
 <?php
     $cnt++;
@@ -976,7 +977,37 @@ function moderate() {
               </form>
             </p>
 <?php
+  } else {
+?>
+            <p>There are no posts in the moderation queue.</p>
+<?php
   }
+}
+
+function domoderate() {
+  global $db, $adminpost, $cnt;
+
+  if (!$adminpost) return homepage();
+
+  for ($i=0; $i<$cnt; $i++) {
+    $postnum = mqreq("p$i");
+    $r = mqreq("r$i");
+
+    $info = $db->getmodinfo($postnum);
+    if ($info) {
+      if ($r == 'ok') {
+        $db->putmodinfo($postnum, NULL);
+        $db->putinfo($postnum, $info);
+      } elseif ($r == 'x') {
+        $emailhash = $info['emailhash'];
+        $db->putmodinfo($postnum, NULL);
+        if (!$db->getinfo($postnum)) {
+          $db->putemailhashpost($emailhash, '');
+        }
+      }
+    }
+  }
+  moderate();
 }
 
 function notelogout() {
