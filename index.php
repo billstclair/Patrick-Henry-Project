@@ -20,7 +20,7 @@ function hsc($x) {
 }
 
 // During development
-$default_error = "Play as you will, but posts are not yet persistent";
+$default_error = ''; //"Play as you will, but posts are not yet persistent";
 
 // Read-only page display
 $page = mqreq('page');
@@ -62,6 +62,41 @@ $onloadid = NULL;
 
 // True if the viewed video is awaiting moderation
 $modp = FALSE;
+
+// Sessions are used for the administrator
+session_start();
+$adminpost = @$_SESSION['adminpost'];
+$newadmin = FALSE;
+if ($adminpost) {
+  if ($page == 'logout') {
+    kill_session();
+    $adminpost = NULL;
+  }
+} else {
+  // It's a little more time to check for admin here,
+  // but it gets the logout item up right away, and it
+  // only happens on email/password pages
+  if ($email && $password) checkadmin($email, $password);
+}
+
+function checkadmin($email, $password) {
+  global $db, $adminpost, $admin_email, $newadmin;
+  $isadmin = ($email == $admin_email);
+  $postnum = $db->getemailpost($email);
+  if ($postnum) {
+    $info = getinfo($postnum, $ignore);
+    if ($info) {
+      if ($db->verify_password($password, $info['salt'], $info['passwordhash'])) {
+        if (!$isadmin) $isadmin = @$info['adminp'];
+        if ($isadmin) {
+          $adminpost = $postnum;
+          $newadmin = TRUE;
+          $_SESSION['adminpost'] = @$info['postnum'];
+        }
+      }
+    }
+  }
+}
 
 ?>
 <html>
@@ -115,12 +150,21 @@ $modp = FALSE;
 <?php
 
 function left_column() {
+  global $adminpost;
 ?>
               <p>
                 <a href="./">Home</a><br/>
                 <a href="./?page=post">Post&nbsp;Your&nbsp;Video</a><br/>
                 <a href="./?page=edit">Edit&nbsp;Your&nbsp;Video</a><br/>
                 <a href="./?page=videos">Videos</a><br/>
+<?php
+  if ($adminpost) {
+?>
+                <a href="./?page=moderate">Moderate</a><br/>
+                <a href="./?page=logout">Admin Logout</a><br/>
+<?php
+  }
+?>
               </p>
 <?php
 }
@@ -139,6 +183,7 @@ function content() {
   elseif ($page == 'post') post();
   elseif ($page == 'edit') edit();
   elseif ($page == 'forgot') forgot();
+  elseif ($page == 'logout') notelogout();
   else require "index.inc";
 }
 
@@ -148,12 +193,7 @@ function view($post=NULL) {
 
   if (!$post) $post = $postnum;
 
-  $info = $db->getinfo($post);
-  $modp = FALSE;
-  if (!$info) {
-    $info = $db->getmodinfo($post);
-    if ($info) $modp = TRUE;
-  }
+  $info = getinfo($post, $modp);
 
   if (!$info) {
     echo "<span style='color: red; font-weight: bold;'>Post not found:</span> $post";
@@ -496,11 +536,7 @@ function doedit() {
     return edit('Unknown email address');
   }
   $modp = false;
-  $info = $db->getinfo($postnum);
-  if (!$info) {
-    $info = $db->getmodinfo($postnum);
-    if ($info) $modp = true;
-  }
+  $info = getinfo($postnum, $modp);
   if (!$info) {
     $onloadid = 'email';
     return edit("Can't find video record for that email address");
@@ -603,11 +639,7 @@ function forgot($doit=false) {
   $postnum = $pwdinfo['postnum'];
   $key = $pwdinfo['key'];
   $modp = false;
-  $postinfo = $db->getinfo($postnum);
-  if (!$postinfo) {
-    $postinfo = $db->getmodinfo($postnum);
-    if ($postinfo) $modp = true;
-  }
+  $postinfo = getinfo($postnum, $modp);
   if (!$postinfo || $key != @$postinfo['key']) {
     echo $invalidmsg;
     return;
@@ -659,12 +691,18 @@ function forgot($doit=false) {
 <?php
 }
 
+function newadmin_error(&$error) {
+  global $newadmin;
+  if (!$error && $newadmin) $error = "Logged in as administrator";
+}
+
 function post($error=null) {
   global $youtube, $video, $name, $url, $email, $password, $verify;
   global $cap, $keepcap, $default_error, $onloadid;
   global $postnum;
 
-   //if (!$error) $error = $default_error;
+  newadmin_error($error);
+  if (!$error) $error = $default_error;
   if (!$onloadid) $onloadid = 'youtube';
 
   if (!$youtube && $video) $youtube = "http://youtu.be/$video";
@@ -858,13 +896,33 @@ function dodelete() {
   $db->putinfo($postnum, '');
   $db->putmodinfo($postnum, '');
   $db->freepostnum($postnum);
-  echo '<p>Your video has been deleted.</p>';
+?>
+                <p>Your video has been deleted.</p>
+<?php
 }
 
 function videos() {
 ?>
 <p>Videos will go here</p>
 <?php
+}
+
+function notelogout() {
+?>
+                <p>You have been logged out as administrator.</p>
+<?php
+}
+
+function getinfo($postnum, &$modp) {
+  global $db;
+
+  $modp = FALSE;
+  $res = $db->getinfo($postnum);
+  if (!$res) {
+    $res = $db->getmodinfo($postnum);
+    if ($res) $modp = true;
+  }
+  return $res;
 }
 
 function gencap() {
@@ -878,15 +936,24 @@ function getscrambler() {
   return $db->getscrambler();
 }
 
-/* Getting youtube header
+// From http://www.php.net/manual/en/function.session-destroy.php
+function kill_session() {
+  // Unset all of the session variables.
+  $_SESSION = array();
 
-telnet www.youtube.com 80
-HEAD /watch?v=<number> HTTP/1.0
-Host: www.youtube.com
+  // If it's desired to kill the session, also delete the session cookie.
+  // Note: This will destroy the session, and not just the session data!
+  if (ini_get("session.use_cookies")) {
+    $params = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000,
+              $params["path"], $params["domain"],
+              $params["secure"], $params["httponly"]
+              );
+  }
 
-Will get a 404 if the video doesn't exist:
-  HTTP/1.0 404 Not Found
-*/
+  // Finally, destroy the session.
+  session_destroy();  
+}
 
 
 /* ***** BEGIN LICENSE BLOCK *****

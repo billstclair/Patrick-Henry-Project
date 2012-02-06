@@ -1,4 +1,3 @@
-        </p>
         <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
           <input type="hidden" name="cmd" value="_s-xclick">
           <input type="image" src="btn_donate_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
