@@ -7,3 +7,6 @@ $emaildir = "$datadir/email";
 $scramblerkey = 'scrambler';
 $countkey = 'count';
 $freelistkey = 'freelist';
+
+// The initial admin email address
+$admin_email = 'billstclair@gmail.com';

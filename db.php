@@ -75,11 +75,16 @@ class db {
     $path = $this->infopath($prefix);
     $str = $fsdb->get($path);
     $arr = $str ? unserialize($str) : array();
-    $arr[$idx] = $info;
-    ksort($arr);
-    $str = serialize($arr);
+    if ($info) $arr[$idx] = $info;
+    else unset($arr[$idx]);
+    if (count($arr) > 0) {
+      ksort($arr);
+      $str = serialize($arr);
+    } else {
+      $str = '';
+    }
     $fsdb->put($path, '');    // Work around fsdb bug
-    $fsdb->put($path, $str);
+    if ($str) $fsdb->put($path, $str);
   }
 
   function putinfo($postnum, $info) {
@@ -184,8 +189,8 @@ class db {
     return sha1(sha1($password) ^ $salt);
   }
 
-  function verify_password($password, $salt, $hash) {
-    return $hash == sha1(sha1($password) ^ $salt);
+  function verify_password($password, $salt, $passwordhash) {
+    return $passwordhash == sha1(sha1($password) ^ $salt);
   }
 
   function verify_post_password($postnum, $password) {
@@ -193,6 +198,12 @@ class db {
     if (!$info) $info = $this->getmodinfo($postnum);
     if (!$info) return false;
     return $this->verify_password($password, $info['salt'], $info['passwordhash']);
+  }
+
+  function verify_email_password($email, $password) {
+    $postnum = $this->getemailpost($email);
+    if (!$postnum) return FALSE;
+    return $this->verify_post_password($postnum, $password);
   }
 
 }

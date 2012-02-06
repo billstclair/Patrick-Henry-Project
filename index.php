@@ -47,6 +47,8 @@ $submit = mqreq('submit');
 $edit = mqreq('edit');
 $forgot = mqreq('forgot');
 $changepass = mqreq('changepass');
+$delete = mqreq('delete');
+$cancel = mqreq('cancel');
 
 $db = new db();
 $cap = new Mathcap();
@@ -57,6 +59,9 @@ $keepcap = FALSE;
 
 // The id of the field to focus
 $onloadid = NULL;
+
+// True if the viewed video is awaiting moderation
+$modp = FALSE;
 
 ?>
 <html>
@@ -127,16 +132,19 @@ function content() {
   elseif ($cmd == 'finishpost') finishpost();
   elseif ($cmd == 'register') register();
   elseif ($cmd == 'edit') doedit();
+  elseif ($cmd == 'delete') dodelete();
+  elseif ($cmd == 'forgot') forgot(TRUE);
   elseif ($page == 'view') view();
   elseif ($page == 'videos') videos();
   elseif ($page == 'post') post();
   elseif ($page == 'edit') edit();
+  elseif ($page == 'forgot') forgot();
   else require "index.inc";
 }
 
 function view($post=NULL) {
   global $postnum, $db;
-  global $video, $name, $url;
+  global $video, $name, $url, $modp;
 
   if (!$post) $post = $postnum;
 
@@ -235,13 +243,23 @@ function dopost() {
 function displayPost($newpostp=FALSE) {
    global $youtube, $video, $name, $email, $url, $password, $verify;
    global $string, $input, $time, $hash;
-   global $postnum;
+   global $postnum, $modp;
 
 ?>
               <div style="text-align: center; margin-left: auto; margin-right: auto; width: 560px;">
+<?php
+  if ($modp) {
+?>
+                <p style="color: red;">This video is awaiting moderation</p>
+<?php
+  } else {
+?>
                 <p>
                   <iframe width="560" height="315" src="<?php echo "http://www.youtube.com/embed/$video"; ?>" frameborder="0" allowfullscreen></iframe>
                 </p>
+<?php
+  }
+?>
                 <a href="<?php echo "http://youtu.be/$video"; ?>"><?php echo "youtu.be/$video"; ?></a>
                 <br/>
                 <?php if ($url) {
@@ -306,9 +324,9 @@ function displayPost($newpostp=FALSE) {
 ?>
               <p>
                 Your video information has been submitted for moderation. It will appear in the list of videos after approval.
-              </p></p>
-                <a href='./?page=view&postnum=<?php echo $postnum; ?>'>
-                  Click here</a> for your video's permanent page.</a>
+              </p>
+              </p>
+                <a href='./?page=view&postnum=<?php echo $postnum; ?>'>Click here</a> for your video's permanent page.</a>
               </p>
 <?php
   } else {
@@ -335,7 +353,14 @@ function finishpost() {
      }
      if (!$edit) {
        putmodinfo($postnum, $video, $email, $password, $name, $url);
-       echo "<p>Your updated video information has been saved. It will appear on the site after a moderator approves it.</p>";
+?>
+              </p>
+                Your updated video information has been saved. It will appear on the site after a moderator approves it.
+              </p>
+              <p>
+                <a href="./?page=view&postnum=<?php echo $postnum; ?>">Click here</a> for your video's permanent page.
+              </p>
+<?php
        return;
      }
    }
@@ -368,8 +393,7 @@ function finishpost() {
    $to = $email;
    $subject = "Post verification from The Patrick Henry Project";
 
-   $message = "
-<html>
+   $message = "<html>
   <head>
     <title>$subject</title>
   </head>
@@ -387,7 +411,7 @@ function finishpost() {
 
    mail($to, $subject, $message, $headers);
 ?>
-<p>An email has been sent to <?php echo $email; ?>. Click on the link in that email to complete your post.</p>
+                <p>An email has been sent to <?php echo hsc($email); ?>. Click on the link in that email to complete your post.</p>
 <?php
 }
 
@@ -455,8 +479,183 @@ function putmodinfo($postnum, $video, $email, $password, $name, $url) {
 }
 
 function doedit() {
+  global $email, $password, $newpass, $verify, $onloadid;
+  global $time, $hash, $input;
+  global $submit, $changepass, $delete, $forgot;
+  global $postnum, $video, $name, $url;
+  global $db, $cap, $mcrypt;
+
+  if (!$email) {
+    $onloadid = 'email';
+    return edit('Email is required');
+  }
+
+  $postnum = $db->getemailpost($email);
+  if (!$postnum) {
+    $onloadid = 'email';
+    return edit('Unknown email address');
+  }
+  $modp = false;
+  $info = $db->getinfo($postnum);
+  if (!$info) {
+    $info = $db->getmodinfo($postnum);
+    if ($info) $modp = true;
+  }
+  if (!$info) {
+    $onloadid = 'email';
+    return edit("Can't find video record for that email address");
+  }
+
+  if ($submit || $changepass || $delete) {
+    if (!$password) {
+      $onloadid = 'password';
+      return edit('Password is required');
+    }
+    if (!$db->verify_password($password, $info['salt'], $info['passwordhash'])) {
+      $onloadid = 'email';
+      return edit('Invalid email or password');
+    }
+
+    if ($submit) {
+      $video = $info['video'];
+      $name = @$info['name'];
+      $url = @$info['url'];
+      return post();
+    } elseif ($changepass) {
+      if ($newpass != $verify) {
+        $onloadid = 'newpass';
+        return edit('Passwords do not match');
+      }
+      $passwordhash = $db->passwordhash($newpass, $salt);
+      $info['salt'] = $salt;
+      $info['passwordhash'] = $passwordhash;
+      if ($modp) $db->putmodinfo($postnum, $info);
+      else $db->putinfo($postnum, $info);
+      echo "<p>Your password has been changed.</p>";
+      return;
+    } else {
 ?>
-<p>Editing videos doesn't work yet.</p>
+              <p>Are you sure you want to delete your video?</p>
+              <p>
+                <form method='post' action='./'>
+                  <input type='hidden' name='cmd' value='delete'/>
+                  <input type='hidden' name='email' value='<?php echo hsc($email); ?>'/>
+                  <input type='hidden' name='password' value='<?php echo hsc($password); ?>'/>
+                  <input type='submit' name='submit' value='Delete'/>
+                  <input type='submit' name='cancel' value='Cancel'/>
+                </form>
+              </p>
+<?php
+      return;
+    }
+  } elseif ($forgot) {
+    $scrambler = getscrambler();
+    if (!$cap->verify($input, $time, $hash, $scrambler)) {
+      $onloadid = 'input';
+      return edit('Wrong answer to simple arithmetic problem');
+    }
+    // Send password reset email
+    $key = sha1($db->rand->urandom_bytes(20));
+    $pwdinfo = array('postnum' => $postnum,
+                     'key' => $key);
+    $pwdinfo = serialize($pwdinfo);
+    $pwdinfo = urlencode($mcrypt->encrypt($pwdinfo, $scrambler));
+    $baseurl = baseurl();
+    $fullurl = "$baseurl?page=forgot&info=$pwdinfo";
+    $to = $email;
+    $subject = "Password recovery from The Patrick Henry Project";
+    $message = "<html>
+  <head>
+    <title>$subject</title>
+  </head>
+  <body>
+    <p>Click the link below to set a new password.</p>
+    <p style='margin-left: 2em;'><a href='$fullurl'>Set Password</a></p>
+    <p>If you didn't request a password change from the Patrick Henry Project, please ignore this message.</p>
+  </body>
+</html>
+";
+   $headers  = 'MIME-Version: 1.0' . "\r\n";
+   $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
+   $headers .= 'From: admin@patrickhenryproject.org' . "\r\n";
+   mail($to, $subject, $message, $headers);
+
+   $info['key'] = $key;
+   if ($modp) $db->putmodinfo($postnum, $info);
+   else $db->putinfo($postnum, $info);
+?>
+                <p>An email has been sent to <?php echo hsc($email); ?>. Click on the link in that email to set your password.</p>
+<?php
+  }
+}
+
+function forgot($doit=false) {
+  global $info, $password, $verify, $onloadid;
+  global $db, $mcrypt;
+
+  $pwdinfo = @$mcrypt->decrypt($info, getscrambler());
+  $pwdinfo = @unserialize($pwdinfo);
+  $invalidmsg = "<p>Invalid password reset info.</p>";
+  if (!$pwdinfo) {
+    echo $invalidmsg;
+    return;
+  }
+  $postnum = $pwdinfo['postnum'];
+  $key = $pwdinfo['key'];
+  $modp = false;
+  $postinfo = $db->getinfo($postnum);
+  if (!$postinfo) {
+    $postinfo = $db->getmodinfo($postnum);
+    if ($postinfo) $modp = true;
+  }
+  if (!$postinfo || $key != @$postinfo['key']) {
+    echo $invalidmsg;
+    return;
+  }
+  $onloadid = 'password';
+  $error = '';
+  if ($doit) {
+    if (!$password) $error = "Password is required";
+    elseif ($password != $verify) $error = "Passwords do not match";
+    else {
+      $passwordhash = $db->passwordhash($password, $salt);
+      $postinfo['salt'] = $salt;
+      $postinfo['passwordhash'] = $passwordhash;
+      unset($postinfo['key']);
+      if ($modp) $db->putmodinfo($postnum, $postinfo);
+      else $db->putinfo($postnum, $postinfo);
+?>
+              <p>Your password has been set.</p>
+<?php
+      return;
+    }
+  }
+?>
+              <p>
+                Use this form to change your password.
+              </p>
+              <p>
+                <form method='post' action='./'>
+                  <input type='hidden' name='cmd' value='forgot'/>
+                  <input type='hidden' name='postnum' value='<?php echo $postnum;?>'/>
+                  <input type='hidden' name='info' value='<?php echo $info;?>'/>
+                  <table>
+                    <tr>
+                      <td></td>
+                      <td><span style='color: red;'><?php echo $error; ?></span></td>
+                    </tr><tr>
+                      <td style="text-align: right;">Password:</td>
+                      <td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
+                    </tr><tr>
+                      <td style="text-align: right;">Password Again:</td>
+                      <td><input type='password' name='verify' id='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
+                    </tr><tr>
+                      <td></td>
+                      <td><input type='submit' name='submit' value='Set Password'/></td>
+                    </tr>
+                  </table>
+                </form>
+              </p>
 <?php
 }
 
@@ -608,7 +807,7 @@ function edit($error=null) {
                       <td><input type='text' name='email' id='email' size='40' value='<?php echo $email; ?>'/></td>
                     </tr><tr>
                       <td></td>
-                      <td style="color: blue;">Required for "Lookup" and "Change Password"</td>
+                      <td style="color: blue;">Required for "Lookup", "Change Password", and "Delete"</td>
                     </tr><tr>
                       <td style="text-align: right;">Password:</td>
                       <td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
@@ -632,16 +831,34 @@ function edit($error=null) {
                       <td>
                         <input type='submit' name='submit' value='Lookup'/>
                         <input type='submit' name='changepass' value='Change Password'/>
+                        <input type='submit' name='delete' value='Delete'/>
                         <input type='submit' name='forgot' value='Forgot Password'/>
                       </td>
                     </tr>
                   </table>
                 </p>
                 <p>
-                  To look up your video, enter your "Email" address and your "Password", and click the "Lookup" button. To change your password, enter your "Email" address, your old "Password", the "New Password" and the new password "Again", and click the "Change Password" button. If you've forgotten your password, enter your "Email" address and the answer to the simple arithmetic problem, click the "Forgot Password" button, and a link will be sent to you allowing you to enter a new password.
+                  To look up your video, enter your "Email" address and your "Password", and click the "Lookup" button. To change your password, enter your "Email" address, your old "Password", the "New Password" and the new password "Again", and click the "Change Password" button. To delete your video, enter your "Email" address and your "Password", and click the "Delete" button. If you've forgotten your password, enter your "Email" address and the answer to the simple arithmetic problem, click the "Forgot Password" button, and a link will be sent to you allowing you to enter a new password.
                 </p>
               </form>
 <?php
+}
+
+function dodelete() {
+  global $email, $password;
+  global $submit;
+  global $db;
+
+  if (!$submit) return edit();
+  $postnum = $db->getemailpost($email);
+  if (!$postnum || !$db->verify_email_password($email, $password)) {
+    return edit('Invalid email or  password');
+  }
+  $db->putemailpost($email, '');
+  $db->putinfo($postnum, '');
+  $db->putmodinfo($postnum, '');
+  $db->freepostnum($postnum);
+  echo '<p>Your video has been deleted.</p>';
 }
 
 function videos() {
