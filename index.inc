@@ -5,7 +5,7 @@ The Patrick Henry Project is an idea proposed by
 publicized her invitation</a>. This site enables collection of those videos in one place.
 </p>
 <p>
-To post your video, click "Post Your Video" in the left column. To change a post you made earlier, or to change your password or recover a lost password, click "Edit Your Video". To view other videos, click on the "Videos" link.
+To view other videos, click on the "Videos" link. To post your video, click "Post Your Video" in the left column. To change or delete a post you made earlier, or to change your password or recover a lost password, click "Edit Your Video".
 </p>
 <p>
 This site does not save access logs. The only information it saves about you is what you submit on the "Post Your Video" page. The code that generated this page is open source. You can view or download it <a href="https://github.com/billstclair/Patrick-Henry-Project">here</a>.

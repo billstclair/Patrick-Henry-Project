@@ -221,7 +221,7 @@ class infomapper {
     if ($start) $this->initstart($start);
     else {
       $contents = $fsdb->contents('');
-      $this->contentslist = $this->sortcontents($contents);
+      $this->contentslist = $contents;
     }
   }
 
@@ -313,16 +313,6 @@ class infomapper {
       if (substr($name, 0, 1) == 'f') return $i;
     }
     return FALSE;
-  }
-
-  function sortcontents($contents) {
-    $fpos = false;
-    $i = $this->findex($contents);
-    if (!$i===FALSE) {
-        return array_merge(array_slice($contents, $i),
-                           array_slice($contents, 0, $i));
-    }
-    return $contents;
   }
 
   function isempty() {

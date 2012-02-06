@@ -154,9 +154,9 @@ function left_column() {
 ?>
               <p>
                 <a href="./">Home</a><br/>
+                <a href="./?page=videos">Videos</a><br/>
                 <a href="./?page=post">Post&nbsp;Your&nbsp;Video</a><br/>
                 <a href="./?page=edit">Edit&nbsp;Your&nbsp;Video</a><br/>
-                <a href="./?page=videos">Videos</a><br/>
 <?php
   if ($adminpost) {
 ?>
@@ -183,8 +183,13 @@ function content() {
   elseif ($page == 'post') post();
   elseif ($page == 'edit') edit();
   elseif ($page == 'forgot') forgot();
+  elseif ($page == 'moderate') moderate();
   elseif ($page == 'logout') notelogout();
-  else require "index.inc";
+  else homepage();
+}
+
+function homepage() {
+  require "index.inc";
 }
 
 function view($post=NULL) {
@@ -303,7 +308,7 @@ function displayPost($newpostp=FALSE) {
                 <a href="<?php echo "http://youtu.be/$video"; ?>"><?php echo "youtu.be/$video"; ?></a>
                 <br/>
                 <?php if ($url) {
-  echo "<a href='$url'>";
+  echo "<a href='" . hsc($url) . "'>";
   if ($name) echo hsc($name);
   else echo hsc($url);
   echo "</a>\n";
@@ -718,7 +723,7 @@ function post($error=null) {
                 Use this form to submit or change your video. Videos should be recitations of Patrick Henry's speech, ending with "Give me liberty or give me death!" If you want to use just the end of the speech, instead of the whole thing, that's OK, but videos of anything other than the speech will not be approved.
               </p>
               <p>
-                This site saves only a cryptographic hash of your email address. That allows us to recognize your email when you type it again, but does not allow anybody, even the site adminstrators, to get your email address. It IS possible for somebody to check if your email address is in the database, but to do that, they have to know it. You will receive a confirmation email from the site. If that's a problem for you, don't post a video here.
+                This site saves only a cryptographic hash of your email address. That allows us to recognize your email when you type it again, but does not allow anybody, even the site adminstrators, to get your email address. It IS possible for somebody to check if your email address is in the database, but to do that, they have to know it. You will receive a confirmation email from the site when you post a video or if you ask to replace a lost password.
               </p>
               <p>
                 <form method='post' action='./'>
@@ -876,7 +881,13 @@ function edit($error=null) {
                   </table>
                 </p>
                 <p>
-                  To look up your video, enter your "Email" address and your "Password", and click the "Lookup" button. To change your password, enter your "Email" address, your old "Password", the "New Password" and the new password "Again", and click the "Change Password" button. To delete your video, enter your "Email" address and your "Password", and click the "Delete" button. If you've forgotten your password, enter your "Email" address and the answer to the simple arithmetic problem, click the "Forgot Password" button, and a link will be sent to you allowing you to enter a new password.
+                  To look up your video, enter your "Email" address and your "Password", and click the "Lookup" button.
+                </p><p>
+                  To change your password, enter your "Email" address, your old "Password", the "New Password" and the new password "Again", and click the "Change Password" button.
+                </p><p>
+                  To delete your video, enter your "Email" address and your "Password", and click the "Delete" button.
+                </p><p>
+                  If you've forgotten your password, enter your "Email" address and the answer to the simple arithmetic problem, click the "Forgot Password" button, and a link will be sent to you allowing you to enter a new password.
                 </p>
               </form>
 <?php
@@ -905,6 +916,67 @@ function videos() {
 ?>
 <p>Videos will go here</p>
 <?php
+}
+
+function moderate() {
+  global $adminpost;
+  global $db;
+
+  if (!$adminpost) return homepage();
+
+  $cnt = 0;
+  $m = $db->modinfomapper();
+  while (!$m->isempty()) {
+    $info = $m->next();
+    if (!$info) continue;
+    if ($cnt == 0) {
+?>
+              <p>OK Approves, X deletes, blank leaves unmoderated.</p>
+              <p>
+                <form method='post' action='./'>
+                  <input type='hidden' name='cmd' value='moderate'/>
+                  <table border='1' cellpadding='4'>
+                  <tr>
+                    <th>OK</th><th>X</th><th>&nbsp;</th>
+                    <th>Post</th><th>Video</th><th>Name</th><th>URL</th>
+                  </tr>
+<?php
+    }
+    $radioname = "r$cnt";
+    $postname = "p$cnt";
+    $postnum = $info['postnum'];
+    $video = $info['video'];
+    $videourl = "http://youtu.be/$video";
+    $name = $info['name'];
+    if (!$name) $name = "&nbsp;";
+    $url = $info['url'];
+    if (!$url) $url = "&nbsp;";
+?>
+                  <tr>
+                    <td><input type='radio' name='<?php echo $radioname; ?>' value='ok' checked='checked'/></td>
+                    <td><input type='radio' name='<?php echo $radioname; ?>' value='x'/></td>
+                    <td><input type='radio' name='<?php echo $radioname; ?>' value='0'/></td>
+                    <td style='text-align: right;'>
+                      <input type='hidden' name='<? echo $postname; ?>' value='<?php echo $postnum; ?>'/>
+                      <a target='_blank' href='./?page=view&postnum=<?php echo $postnum; ?>'><?php echo $postnum; ?></a>
+                    </td>
+                    <td><a target='_blank' href='<?php echo $videourl; ?>'><?php echo hsc($video); ?></a></td>
+                    <td><?php echo hsc($name); ?></td>
+                    <td><a target='_blank' href='<?php echo hsc($url); ?>'><?php echo hsc($url); ?></a></td>
+                  </tr>                    
+<?php
+    $cnt++;
+  }
+  if ($cnt > 0) {
+?>
+                </table>
+                <br/>
+                <input type='submit' name='submit' value='Submit'/>
+                <input type='hidden' name='cnt' value='<?php echo $cnt; ?>'/>
+              </form>
+            </p>
+<?php
+  }
 }
 
 function notelogout() {
