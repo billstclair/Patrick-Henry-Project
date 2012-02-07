@@ -13,7 +13,7 @@ This site does not save access logs. The only information it saves about you is 
 <p>
 Ann Barnhardt's email message as published at Western Rifle Shooters:
 </p>
-<blockquote><p>
+   <blockquote style="border: 1px solid #c0c0ff; padding: 0 1em;"><p>
 Gentlemen-
 </p><p>
 I have just posted a recitation of Patrick Henry's speech. It might be extremely powerful for Americans, and even non-Americans all over the world, who believe in liberty to record their own versions, and then for those to be edited together. I especially like the idea of those people in Europe, Asia, the Middle East, Africa, etc., who are being oppressed by Marxist-Statism and islam to echo Henry's words, which are no longer exclusively American, but are now utterly transcendent.

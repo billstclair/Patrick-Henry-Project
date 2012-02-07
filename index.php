@@ -290,6 +290,7 @@ function displayPost($newpostp=FALSE) {
    global $youtube, $video, $name, $email, $url, $password, $verify;
    global $string, $input, $time, $hash;
    global $postnum, $modp;
+   global $adminpost;
 
 ?>
               <div style="text-align: center; margin-left: auto; margin-right: auto; width: 560px;">
@@ -382,6 +383,13 @@ function displayPost($newpostp=FALSE) {
               </p>
 <?php
   }
+  if ($adminpost) {
+?>
+              <p style='text-align: center;'>
+                <a href='./?page=moderate&postnum=<?php echo $postnum; ?>'>Click here</a> to moderate this post.
+              </p>
+<?php
+}
 }
 
 function finishpost() {
@@ -916,55 +924,161 @@ function dodelete() {
 }
 
 function videos() {
+   global $db, $postnum;
+
+   $m = $db->infomapper($postnum);
+   $firstp = TRUE;
+   $cols = 6;
+   $rows = 10;
+   $colcount = 0;
+   $rowcount = 0;
+   while (!$m->isempty()) {
+     $info = $m->next();
+     if (!$info) continue;
+     if ($firstp) {
 ?>
-<p>Videos will go here</p>
+                <table cellspacing='0' style="border: 1px solid #c0c0ff;">
+                  <tr>
 <?php
+           $firstp = FALSE;
+     } elseif ($colcount >= $cols) {
+        $colcount = 0;
+        $rowcount++;
+        if ($rowcount > $rows) break;
+?>
+                  </tr><tr>
+<?php
+     }
+     $post = $info['postnum'];
+     $video = $info['video'];
+     $youtube = hsc("http://youtu.be/$video");
+     $video = hsc($video);
+     $name = hsc(@$info['name']);
+     $url = hsc(@$info['url']);
+     $colcount++;
+?>
+                    <td valign='top' style="border: 1px solid #c0c0ff; padding: 0.5em;">
+                      <p style='text-align: center;'>
+                        <a href='<?php echo $youtube; ?>' title='View on Youtube'><?php echo $video; ?></a>
+<?php
+     if ($url) {
+?>
+                        <br/>
+                        <a href='<php echo $url; ?>' title="Poster's web site">
+<?php
+       echo $name ? $name : $url;
+       echo "</a>\n";
+     } elseif ($name) {
+?>
+                        <br/>
+                        <?php echo $name; ?>
+<?php
+     }
+?>
+                        <br/>
+                        <a href='./?page=view&postnum=<?php echo $post; ?>'>View page</a>
+                      </p>
+                    </td>
+<?php
+   }
+   if (!$firstp) {
+?>
+                  </tr>
+                </table>
+                <p>
+<?php
+     if ($postnum > 1) {
+       $postnum = max(1, $postnum-($rows * $cols));
+?>
+                 <a href='./?page=videos&postnum=<?php echo $postnum; ?>'>Previous page</a>&nbsp;&nbsp;
+<?php
+     }
+     if (!$m->isempty()) {
+?>
+                  <a href='./?page=videos&postnum=<?php echo $post+1; ?>'>Next page</a>
+<?php
+     }
+?>
+                </p>
+<?php
+  }
+}
+
+class postmapper {
+  var $postnum;
+  function postmapper($postnum) {
+    $this->postnum = $postnum;
+  }
+  function isempty() {
+    return !$this->postnum;
+  }
+  function next() {
+    $postnum = $this->postnum;
+    $this->postnum = NULL;
+    return $postnum ? getinfo($postnum, $ignore) : NULL;
+  }
 }
 
 function moderate() {
-  global $adminpost;
+  global $adminpost, $postnum;
   global $db;
 
   if (!$adminpost) return homepage();
 
   $cnt = 0;
-  $m = $db->modinfomapper();
+  $m = $postnum ? new postmapper($postnum) : $db->modinfomapper();
   while (!$m->isempty()) {
     $info = $m->next();
     if (!$info) continue;
     if ($cnt == 0) {
 ?>
-              <p>OK Approves, X deletes, blank leaves unmoderated.</p>
+              <p>OK Approves, X deletes, blank leaves alone.<br/>
+              Checking the box in the "Live" column causes both live and unmoderated post to be deleted.</p>
               <p>
                 <form method='post' action='./'>
                   <input type='hidden' name='cmd' value='moderate'/>
                   <table border='1' cellpadding='4'>
                   <tr>
                     <th>OK</th><th>X</th><th>&nbsp;</th>
-                    <th>Post</th><th>Video</th><th>Name</th><th>URL</th>
+                    <th>Post</th><th>Video</th><th>Name</th><th>URL</th><th>Live</th>
                   </tr>
 <?php
     }
     $radioname = "r$cnt";
     $postname = "p$cnt";
-    $postnum = $info['postnum'];
+    $checkname = "x$cnt";
+    $post = $info['postnum'];
     $video = $info['video'];
     $videourl = "http://youtu.be/$video";
     $name = @$info['name'];
     $url = @$info['url'];
+    $modinfo = $postnum ? $db->getmodinfo($post) : $info;
+    $liveinfo = $db->getinfo($post);
 ?>
                   <tr>
-                    <td><input type='radio' name='<?php echo $radioname; ?>' value='ok' checked='checked'/></td>
+                     <td><input type='radio' name='<?php echo $radioname; ?>' value='ok' <?php if ($modinfo) echo "checked='checked'"; else echo "disabled='disabled'"; ?>/></td>
                     <td><input type='radio' name='<?php echo $radioname; ?>' value='x'/></td>
-                    <td><input type='radio' name='<?php echo $radioname; ?>' value='0'/></td>
+                    <td><input type='radio' name='<?php echo $radioname; ?>' value='0'<?php if (!$modinfo) echo " checked='checked'"; ?> /></td>
                     <td style='text-align: right;'>
-                      <input type='hidden' name='<?php echo $postname; ?>' value='<?php echo $postnum; ?>'/>
-                      <a target='_blank' href='./?page=view&postnum=<?php echo $postnum; ?>'><?php echo $postnum; ?></a>
+                      <input type='hidden' name='<?php echo $postname; ?>' value='<?php echo $post; ?>'/>
+                      <a target='_blank' href='./?page=view&postnum=<?php echo $post; ?>'><?php echo $post; ?></a>
                     </td>
                     <td><a target='_blank' href='<?php echo $videourl; ?>'><?php echo hsc($video); ?></a></td>
                     <td><?php echo $name ? hsc($name) : "&nbsp;"; ?></td>
                     <td><a target='_blank' href='<?php echo $url ? hsc($url) : "&nbsp;"; ?>'><?php echo hsc($url); ?></a></td>
-                  </tr>                    
+                    <td><?php
+    if ($liveinfo) {
+      echo "<input type='checkbox' name='$checkname'";
+      if (!$modinfo) {
+        echo " checked='checked'";
+      }
+      echo "/>";
+    } else {
+      echo ('&nbsp;');
+    }
+?>
+
+                  </tr>
 <?php
     $cnt++;
   }
@@ -992,8 +1106,13 @@ function domoderate() {
   for ($i=0; $i<$cnt; $i++) {
     $postnum = mqreq("p$i");
     $r = mqreq("r$i");
+    $x = mqreq("x$i");
 
     $info = $db->getmodinfo($postnum);
+    if (!$info && $x) {
+       $info = $db->getinfo($postnum);
+       $r = 'x';
+    }
     if ($info) {
       if ($r == 'ok') {
         $db->putmodinfo($postnum, NULL);
@@ -1001,8 +1120,14 @@ function domoderate() {
       } elseif ($r == 'x') {
         $emailhash = $info['emailhash'];
         $db->putmodinfo($postnum, NULL);
-        if (!$db->getinfo($postnum)) {
+        $live = $db->getinfo($postnum);
+        if ($live && $x) {
+          $db->putinfo($postnum, NULL);
+          $live = NULL;
+          }
+        if (!$live) {
           $db->putemailhashpost($emailhash, '');
+          $db->freepostnum($postnum);
         }
       }
     }

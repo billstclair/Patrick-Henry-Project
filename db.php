@@ -239,10 +239,12 @@ class infomapper {
     $path = splitinfopath($prefix);
     $lendir = $prefix ? count($path) : 0;
     $path = array_merge(array($lendir), $path);
+    if (!$prefix) $path = array_merge($path, array('00'));
     $dir = '';
-    //echo "idx: $idx, path:\n"; print_r($path);
     $pathlen = count($path);
     $maxi = $pathlen-1;
+    $contentslist = array();
+    $contents = array();
     for ($i=0; $i<$pathlen; $i++) {
       $pathelt = $path[$i];
       $contentslist = $fsdb->contents($dir);
@@ -387,10 +389,10 @@ function splitinfopath($string, $levels=0) {
 }
 
 function splitpostnum($postnum, &$start, &$end) {
-  $postnum = $postnum . "";
+  $postnum = "$postnum";
   $len = strlen($postnum);
   if ($len < 2) {
-    $start = 0;
+    $start = '';
     if (!$postnum) $postnum = '00';
     if (strlen($postnum) == 1) $postnum = "0$postnum";
     $end = $postnum;
