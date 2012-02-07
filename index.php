@@ -928,50 +928,56 @@ function videos() {
 
    $m = $db->infomapper($postnum);
    $firstp = TRUE;
-   $cols = 6;
-   $rows = 10;
+   $cols = 5;
+   $rows = 5;
    $colcount = 0;
    $rowcount = 0;
    while (!$m->isempty()) {
      $info = $m->next();
      if (!$info) continue;
+     $post = $info['postnum'];
+     $video = $info['video'];
      if ($firstp) {
 ?>
-                <table cellspacing='0' style="border: 1px solid #c0c0ff;">
+                <p id='video' style='text-align: center; width='560'; margin-left: auto; margin-right: auto;'/>
+                  <iframe width='560' height='315' src='http://www.youtube.com/embed/<?php echo "$video"; ?>' frameborder='0' allowfullscreen></iframe>
+                  <br/>
+                  <a href='./?page=view&postnum=<?php echo $post; ?>'>View page</a>
+                </p>
+                <table cellspacing='0' style='border: 1px solid #c0c0ff;'>
                   <tr>
 <?php
            $firstp = FALSE;
      } elseif ($colcount >= $cols) {
         $colcount = 0;
         $rowcount++;
-        if ($rowcount > $rows) break;
+        if ($rowcount >= $rows) break;
 ?>
                   </tr><tr>
 <?php
      }
-     $post = $info['postnum'];
-     $video = $info['video'];
      $youtube = hsc("http://youtu.be/$video");
      $video = hsc($video);
      $name = hsc(@$info['name']);
      $url = hsc(@$info['url']);
      $colcount++;
+     // Hat tip: http://www.reelseo.com/youtube-thumbnail-image/
 ?>
                     <td valign='top' style="border: 1px solid #c0c0ff; padding: 0.5em;">
                       <p style='text-align: center;'>
+                        <img src='http://img.youtube.com/vi/<?php echo $video ?>/1.jpg' alt='thumbnail' width='120' height='90'/>
                         <a href='<?php echo $youtube; ?>' title='View on Youtube'><?php echo $video; ?></a>
 <?php
      if ($url) {
 ?>
                         <br/>
-                        <a href='<php echo $url; ?>' title="Poster's web site">
-<?php
+                        <a href='<?php echo $url; ?>' title="Poster's web site"><?php
        echo $name ? $name : $url;
        echo "</a>\n";
      } elseif ($name) {
 ?>
                         <br/>
-                        <?php echo $name; ?>
+                        <?php echo "$name\n"; ?>
 <?php
      }
 ?>
