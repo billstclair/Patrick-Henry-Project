@@ -470,7 +470,7 @@ function finishpost() {
    if ($name) @$reginfo['name'] = $name;
    if ($url) @$reginfo['url'] = $url;
    $info = serialize($reginfo);
-   $info = urlencode(deslash($mcrypt->encrypt($info, $scrambler)));
+   $info = urlencode($mcrypt->encrypt($info, $scrambler));
    $baseurl = baseurl();
    $fullurl = "$baseurl?cmd=register&info=$info";
 
@@ -516,7 +516,7 @@ function register() {
   global $submit, $edit, $cap, $mcrypt;
   global $db, $postnum;
   
-  $info = @$mcrypt->decrypt(reslash($info), getscrambler());
+  $info = @$mcrypt->decrypt($info, getscrambler());
   $reginfo = @unserialize($info);
   if (!$reginfo) {
     return post("Malformed registration info.");
@@ -641,7 +641,7 @@ function doedit() {
     $pwdinfo = array('postnum' => $postnum,
                      'key' => $key);
     $pwdinfo = serialize($pwdinfo);
-    $pwdinfo = urlencode(deslash($mcrypt->encrypt($pwdinfo, $scrambler)));
+    $pwdinfo = urlencode($mcrypt->encrypt($pwdinfo, $scrambler));
     $baseurl = baseurl();
     $fullurl = "$baseurl?page=forgot&info=$pwdinfo";
     $to = $email;
@@ -675,7 +675,7 @@ function forgot($doit=false) {
   global $info, $password, $verify, $onloadid;
   global $db, $mcrypt;
 
-  $pwdinfo = @$mcrypt->decrypt(reslash($info), getscrambler());
+  $pwdinfo = @$mcrypt->decrypt($info, getscrambler());
   $pwdinfo = @unserialize($pwdinfo);
   $invalidmsg = "<p>Invalid password reset info.</p>";
   if (!$pwdinfo) {
@@ -1222,16 +1222,6 @@ function kill_session() {
 
   // Finally, destroy the session.
   session_destroy();  
-}
-
-// The rewrite rules don't like extra slashes.
-// These functions get rid of and restore them for BASE64 strings
-function deslash($s) {
-  return str_replace('/', '*', $s);
-}
-
-function reslash($s) {
-  return str_replace('*', '/', $s);
 }
 
 // This is a kluge to get us home from one of the rewritten URLs.
