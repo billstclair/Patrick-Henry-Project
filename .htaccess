@@ -1,0 +1,22 @@
+# Make sure "AllowOverride All" is in your config
+
+# Also make sure you've enabled the following Apache modules:
+#   rewrite, proxy, proxy_http
+
+# Set some options.
+Options -Indexes
+Options +FollowSymLinks
+
+# Rewriting rules
+RewriteEngine on
+
+# You might need this. It's a path in the file system, not URI space
+#RewriteBase /Users/billstclair/Sites/patrickhenryproject/
+
+RewriteRule ^videos$ http://%{HTTP_HOST}%{REQUEST_URI}/ [R]
+RewriteRule ^admin$ http://%{HTTP_HOST}%{REQUEST_URI}/ [R]
+RewriteRule ^view/([^/]+)$ index.php?v=$1  [L]
+RewriteRule ^videos/$ index.php?l=1 [L]
+RewriteRule ^videos/([^/]+)$ index.php?l=$1 [L]
+RewriteRule ^admin/$ index.php [L]
+RewriteRule ^admin/([^/]+)$ index.php?page=$1 [L,QSA]
