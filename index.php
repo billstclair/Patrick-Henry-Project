@@ -51,6 +51,18 @@ $changepass = mqreq('changepass');
 $delete = mqreq('delete');
 $cancel = mqreq('cancel');
 
+// Shortcuts
+$v = mqreq('v');
+if ($v) {
+  $page = 'view';
+  $postnum = $v;
+}
+$l = mqreq('l');
+if ($l) {
+  $page='videos';
+  $postnum = $l;
+}
+
 $db = new db();
 $cap = new Mathcap();
 $mcrypt = new mcrypt();
@@ -154,15 +166,15 @@ function left_column() {
   global $adminpost;
 ?>
               <p>
-                <a href="./">Home</a><br/>
-                <a href="./?page=videos">Videos</a><br/>
-                <a href="./?page=post">Post&nbsp;Your&nbsp;Video</a><br/>
-                <a href="./?page=edit">Edit&nbsp;Your&nbsp;Video</a><br/>
+                <a href="<?php dd(); ?>/">Home</a><br/>
+                <a href="<?php dd(); ?>/videos/">Videos</a><br/>
+                <a href="<?php dd(); ?>/admin/post">Post&nbsp;Your&nbsp;Video</a><br/>
+                <a href="<?php dd(); ?>/admin/edit">Edit&nbsp;Your&nbsp;Video</a><br/>
 <?php
   if ($adminpost) {
 ?>
-                <a href="./?page=moderate">Moderate</a><br/>
-                <a href="./?page=logout">Admin Logout</a><br/>
+                <a href="<?php dd(); ?>/admin/moderate">Moderate</a><br/>
+                <a href="<?php dd(); ?>/admin/logout">Admin Logout</a><br/>
 <?php
   }
 ?>
@@ -213,11 +225,29 @@ function view($post=NULL) {
   displayPost();
 }
 
+function chklen($str, $name, $len, $fun='post') {
+   if (strlen($str) > $len) {
+     $msg = "$name may not be longer than $len";
+     if ($fun) $fun($msg);
+     return $msg;
+   }
+   return false;
+}
+
 function dopost() {
    global $youtube, $video, $name, $email, $url, $password, $verify;
    global $input, $time, $hash;
    global $cap, $keepcap, $onloadid;
    global $db, $postnum;
+
+   // Length checks
+   if (chklen($youtube, "YouTube video link", 100) ||
+       chklen($email, "Email address", 40) ||
+       chklen($password, "Password", 100) ||
+       chklen($name, "Name", 32) ||
+       chklen($url, "Web site", 100)) {
+     return;
+   }       
 
    // Validate captcha
    if (!$postnum) {
@@ -249,7 +279,7 @@ function dopost() {
        $pos = strpos($query, '&v=');
        if ($pos === FALSE) {
          $onloadid = 'youtube';
-         return post('Malformed Youtube Video link');
+         return post('Malformed YouTube Video link');
        }
        $video = substr($query, $pos+3);
      }
@@ -307,7 +337,7 @@ function displayPost($newpostp=FALSE) {
 <?php
   }
 ?>
-                <a href="<?php echo "http://youtu.be/$video"; ?>"><?php echo "youtu.be/$video"; ?></a>
+                <a href="<?php echo "http://youtu.be/$video"; ?>">View on YouTube</a>
                 <br/>
                 <?php if ($url) {
   echo "<a href='" . hsc($url) . "'>";
@@ -316,7 +346,7 @@ function displayPost($newpostp=FALSE) {
   echo "</a>\n";
 } elseif ($name) echo hsc($name);
 ?>
-                <form method='post' action='./'>
+                <form method='post' action='<?php dd(); ?>/'>
 <?php
   if ($email && $password) {
 ?>
@@ -373,7 +403,7 @@ function displayPost($newpostp=FALSE) {
                 Your video information has been submitted for moderation. It will appear in the list of videos after approval.
               </p>
               </p>
-                <a href='./?page=view&postnum=<?php echo $postnum; ?>'>Click here</a> for your video's permanent page.</a>
+                <a href='<?php dd(); ?>/?&v=<?php echo $postnum; ?>'>Click here</a> for your video's permanent page.</a>
               </p>
 <?php
   } else {
@@ -386,7 +416,7 @@ function displayPost($newpostp=FALSE) {
   if ($adminpost) {
 ?>
               <p style='text-align: center;'>
-                <a href='./?page=moderate&postnum=<?php echo $postnum; ?>'>Click here</a> to moderate this post.
+                <a href='<?php dd(); ?>/?page=moderate&postnum=<?php echo $postnum; ?>'>Click here</a> to moderate this post.
               </p>
 <?php
 }
@@ -412,7 +442,7 @@ function finishpost() {
                 Your updated video information has been saved. It will appear on the site after a moderator approves it.
               </p>
               <p>
-                <a href="./?page=view&postnum=<?php echo $postnum; ?>">Click here</a> for your video's permanent page.
+                <a href="<?php dd(); ?>/?&v=<?php echo $postnum; ?>">Click here</a> for your video's permanent page.
               </p>
 <?php
        return;
@@ -440,7 +470,7 @@ function finishpost() {
    if ($name) @$reginfo['name'] = $name;
    if ($url) @$reginfo['url'] = $url;
    $info = serialize($reginfo);
-   $info = urlencode($mcrypt->encrypt($info, $scrambler));
+   $info = urlencode(deslash($mcrypt->encrypt($info, $scrambler)));
    $baseurl = baseurl();
    $fullurl = "$baseurl?cmd=register&info=$info";
 
@@ -486,7 +516,7 @@ function register() {
   global $submit, $edit, $cap, $mcrypt;
   global $db, $postnum;
   
-  $info = @$mcrypt->decrypt($info, getscrambler());
+  $info = @$mcrypt->decrypt(reslash($info), getscrambler());
   $reginfo = @unserialize($info);
   if (!$reginfo) {
     return post("Malformed registration info.");
@@ -539,6 +569,8 @@ function doedit() {
   global $postnum, $video, $name, $url;
   global $db, $cap, $mcrypt;
 
+  if (chklen($newpass, "New Password", 100, 'edit')) return;
+
   if (!$email) {
     $onloadid = 'email';
     return edit('Email is required');
@@ -587,7 +619,7 @@ function doedit() {
 ?>
               <p>Are you sure you want to delete your video?</p>
               <p>
-                <form method='post' action='./'>
+                <form method='post' action='<?php dd(); ?>/'>
                   <input type='hidden' name='cmd' value='delete'/>
                   <input type='hidden' name='email' value='<?php echo hsc($email); ?>'/>
                   <input type='hidden' name='password' value='<?php echo hsc($password); ?>'/>
@@ -609,7 +641,7 @@ function doedit() {
     $pwdinfo = array('postnum' => $postnum,
                      'key' => $key);
     $pwdinfo = serialize($pwdinfo);
-    $pwdinfo = urlencode($mcrypt->encrypt($pwdinfo, $scrambler));
+    $pwdinfo = urlencode(deslash($mcrypt->encrypt($pwdinfo, $scrambler)));
     $baseurl = baseurl();
     $fullurl = "$baseurl?page=forgot&info=$pwdinfo";
     $to = $email;
@@ -643,7 +675,7 @@ function forgot($doit=false) {
   global $info, $password, $verify, $onloadid;
   global $db, $mcrypt;
 
-  $pwdinfo = @$mcrypt->decrypt($info, getscrambler());
+  $pwdinfo = @$mcrypt->decrypt(reslash($info), getscrambler());
   $pwdinfo = @unserialize($pwdinfo);
   $invalidmsg = "<p>Invalid password reset info.</p>";
   if (!$pwdinfo) {
@@ -654,13 +686,15 @@ function forgot($doit=false) {
   $key = $pwdinfo['key'];
   $postinfo = getinfo($postnum, $modp);
   if (!$postinfo || $key != @$postinfo['key']) {
-    echo $invalidmsg;
+    echo "$invalidmsg";
     return;
   }
   $onloadid = 'password';
   $error = '';
   if ($doit) {
-    if (!$password) $error = "Password is required";
+    $error = chklen($password, "Password", 100, null);
+    if ($error) ;
+    elseif (!$password) $error = "Password is required";
     elseif ($password != $verify) $error = "Passwords do not match";
     else {
       $passwordhash = $db->passwordhash($password, $salt);
@@ -680,7 +714,7 @@ function forgot($doit=false) {
                 Use this form to change your password.
               </p>
               <p>
-                <form method='post' action='./'>
+                <form method='post' action='<?php dd(); ?>/'>
                   <input type='hidden' name='cmd' value='forgot'/>
                   <input type='hidden' name='postnum' value='<?php echo $postnum;?>'/>
                   <input type='hidden' name='info' value='<?php echo $info;?>'/>
@@ -690,10 +724,10 @@ function forgot($doit=false) {
                       <td><span style='color: red;'><?php echo $error; ?></span></td>
                     </tr><tr>
                       <td style="text-align: right;">Password:</td>
-                      <td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
+                      <td><input type='password' name='password' id='password' size='40' maxlength='100' value='<?php echo hsc($password); ?>'/></td>
                     </tr><tr>
                       <td style="text-align: right;">Password Again:</td>
-                      <td><input type='password' name='verify' id='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
+                      <td><input type='password' name='verify' id='verify' size='40' maxlength='100' value='<?php echo hsc($verify); ?>'/></td>
                     </tr><tr>
                       <td></td>
                       <td><input type='submit' name='submit' value='Set Password'/></td>
@@ -734,7 +768,7 @@ function post($error=null) {
                 This site saves only a cryptographic hash of your email address. That allows us to recognize your email when you type it again, but does not allow anybody, even the site adminstrators, to get your email address. It IS possible for somebody to check if your email address is in the database, but to do that, they have to know it. You will receive a confirmation email from the site when you post a video or if you ask to replace a lost password.
               </p>
               <p>
-                <form method='post' action='./'>
+                <form method='post' action='<?php dd(); ?>/'>
                   <input type='hidden' name='cmd' value='post'/>
 <?php
   if ($postnum) {
@@ -758,7 +792,7 @@ function post($error=null) {
                       <td style="color: blue;">Required</td>
                     </tr><tr>
                       <td>YouTube Video:</td>
-                      <td><input type='text' name='youtube' id='youtube' size='40' value='<?php echo $youtube; ?>'/></td>
+                      <td><input type='text' name='youtube' id='youtube' size='40' maxlength='100' value='<?php echo $youtube; ?>'/></td>
 <?php
   if (!$postnum) {
 ?>
@@ -770,7 +804,7 @@ function post($error=null) {
 ?>
                     </tr><tr>
                       <td style="text-align: right;">Email:</td>
-                      <td><input type='text' name='email' id='email' size='40' value='<?php echo $email; ?>'/></td>
+                      <td><input type='text' name='email' id='email' size='40' maxlength='40' value='<?php echo $email; ?>'/></td>
                     </tr><tr>
                       <td style="text-align: right;">Password:</td>
                       <td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
@@ -788,10 +822,10 @@ function post($error=null) {
                       <td style="color: blue;">Optional</td>
                     </tr><tr>
                       <td style="text-align: right;">Name:</td>
-                      <td><input type='text' name='name' id='name' size='40' value='<?php echo hsc($name); ?>'/></td>
+                      <td><input type='text' name='name' id='name' size='32' maxlength='32' value='<?php echo hsc($name); ?>'/></td>
                     </tr><tr>
                       <td style="text-align: right;">Web Site:</td>
-                      <td><input type='text' name='url' id='url' size='40' value='<?php echo hsc($url); ?>'/></td>
+                      <td><input type='text' name='url' id='url' size='40' maxlength='100' value='<?php echo hsc($url); ?>'/></td>
                     </tr><tr>
                       <td></td>
                       <td><input type='submit' name='submit' value='Submit'/></td>
@@ -803,7 +837,7 @@ function post($error=null) {
    if ($postnum) {
 ?>
               </p>
-                <a href='./?page=view&postnum=<?php echo $postnum; ?>'>Click here</a> for your video's permanent page.</a>
+                <a href='<?php dd(); ?>/?&v=<?php echo $postnum; ?>'>Click here</a> for your video's permanent page.</a>
               </p>
               <p>
                 To make changes to your post, fill in your "Email" and "Password" and change your "YouTube Video", "Name", and "Web Site" as desired. Click the "Submit" button, and you will be able to view your new information before approving the change.
@@ -844,7 +878,7 @@ function edit($error=null) {
   $time = $gen['time'];
   $hash = $gen['hash'];
 ?>
-              <form method='post' action='./'>
+              <form method='post' action='<?php dd(); ?>/'>
                 <input type='hidden' name='cmd' value='edit'/>
                 <input type='hidden' name='time' value='<?php echo $time; ?>'>
                 <input type='hidden' name='hash' value='<?php echo $hash; ?>'>
@@ -858,22 +892,22 @@ function edit($error=null) {
                       <td style="color: blue;">Required</td>
                     </tr><tr>
                       <td style="text-align: right;">Email:</td>
-                      <td><input type='text' name='email' id='email' size='40' value='<?php echo $email; ?>'/></td>
+                      <td><input type='text' name='email' id='email' size='40' maxlength='40' value='<?php echo $email; ?>'/></td>
                     </tr><tr>
                       <td></td>
                       <td style="color: blue;">Required for "Lookup", "Change Password", and "Delete"</td>
                     </tr><tr>
                       <td style="text-align: right;">Password:</td>
-                      <td><input type='password' name='password' id='password' size='20' value='<?php echo hsc($password); ?>'/></td>
+                      <td><input type='password' name='password' id='password' size='40' maxlength='100' value='<?php echo hsc($password); ?>'/></td>
                     </tr><tr>
                       <td></td>
                       <td style="color: blue;">Required for "Change Password"</td>
                     </tr><tr>
                       <td style="text-align: right;">New Password:</td>
-                      <td><input type='password' name='newpass' id='newpass' size='20' value='<?php echo hsc($newpass); ?>'/></td>
+                      <td><input type='password' name='newpass' id='newpass' size='40' maxlength='100' value='<?php echo hsc($newpass); ?>'/></td>
                     </tr><tr>
                       <td style="text-align: right;">Again:</td>
-                      <td><input type='password' name='verify' id='verify' size='20' value='<?php echo hsc($verify); ?>'/></td>
+                      <td><input type='password' name='verify' id='verify' size='40' maxlength='100' value='<?php echo hsc($verify); ?>'/></td>
                     </tr><tr>
                       <td></td>
                       <td style="color: blue;">Required for "Forgot Password"</td>
@@ -935,14 +969,14 @@ function videos() {
    while (!$m->isempty()) {
      $info = $m->next();
      if (!$info) continue;
-     $post = $info['postnum'];
+     $nextpost = $info['postnum'];
      $video = $info['video'];
      if ($firstp) {
 ?>
                 <p id='video' style='text-align: center; width='560'; margin-left: auto; margin-right: auto;'/>
                   <iframe width='560' height='315' src='http://www.youtube.com/embed/<?php echo "$video"; ?>' frameborder='0' allowfullscreen></iframe>
                   <br/>
-                  <a href='./?page=view&postnum=<?php echo $post; ?>'>View page</a>
+                  <a href='<?php dd(); ?>/view/<?php echo $nextpost; ?>'>View page</a>
                 </p>
                 <table cellspacing='0' style='border: 1px solid #c0c0ff;'>
                   <tr>
@@ -956,6 +990,7 @@ function videos() {
                   </tr><tr>
 <?php
      }
+     $post = $nextpost;
      $youtube = hsc("http://youtu.be/$video");
      $video = hsc($video);
      $name = hsc(@$info['name']);
@@ -966,13 +1001,13 @@ function videos() {
                     <td valign='top' style="border: 1px solid #c0c0ff; padding: 0.5em;">
                       <p style='text-align: center;'>
                         <img src='http://img.youtube.com/vi/<?php echo $video ?>/1.jpg' alt='thumbnail' width='120' height='90'/>
-                        <a href='<?php echo $youtube; ?>' title='View on Youtube'><?php echo $video; ?></a>
+                        <a href='<?php echo $youtube; ?>' title='View on Youtube'>View on YouTube</a>
 <?php
      if ($url) {
 ?>
                         <br/>
                         <a href='<?php echo $url; ?>' title="Poster's web site"><?php
-       echo $name ? $name : $url;
+       echo $name ? $name : 'Anonymous';
        echo "</a>\n";
      } elseif ($name) {
 ?>
@@ -982,7 +1017,7 @@ function videos() {
      }
 ?>
                         <br/>
-                        <a href='./?page=view&postnum=<?php echo $post; ?>'>View page</a>
+                        <a href='<?php dd(); ?>/view/<?php echo $post; ?>'>View page</a>
                       </p>
                     </td>
 <?php
@@ -996,12 +1031,12 @@ function videos() {
      if ($postnum > 1) {
        $postnum = max(1, $postnum-($rows * $cols));
 ?>
-                 <a href='./?page=videos&postnum=<?php echo $postnum; ?>'>Previous page</a>&nbsp;&nbsp;
+                 <a href='<?php dd(); ?>/videos/<?php echo $postnum; ?>'>Previous page</a>&nbsp;&nbsp;
 <?php
      }
      if (!$m->isempty()) {
 ?>
-                  <a href='./?page=videos&postnum=<?php echo $post+1; ?>'>Next page</a>
+                  <a href='<?php dd(); ?>/videos/<?php echo $post+1; ?>'>Next page</a>
 <?php
      }
 ?>
@@ -1041,7 +1076,7 @@ function moderate() {
               <p>OK Approves, X deletes, blank leaves alone.<br/>
               Checking the box in the "Live" column causes both live and unmoderated post to be deleted.</p>
               <p>
-                <form method='post' action='./'>
+                <form method='post' action='<?php dd(); ?>/'>
                   <input type='hidden' name='cmd' value='moderate'/>
                   <table border='1' cellpadding='4'>
                   <tr>
@@ -1067,7 +1102,7 @@ function moderate() {
                     <td><input type='radio' name='<?php echo $radioname; ?>' value='0'<?php if (!$modinfo) echo " checked='checked'"; ?> /></td>
                     <td style='text-align: right;'>
                       <input type='hidden' name='<?php echo $postname; ?>' value='<?php echo $post; ?>'/>
-                      <a target='_blank' href='./?page=view&postnum=<?php echo $post; ?>'><?php echo $post; ?></a>
+                      <a target='_blank' href='<?php dd(); ?>/?&v=<?php echo $post; ?>'><?php echo $post; ?></a>
                     </td>
                     <td><a target='_blank' href='<?php echo $videourl; ?>'><?php echo hsc($video); ?></a></td>
                     <td><?php echo $name ? hsc($name) : "&nbsp;"; ?></td>
@@ -1189,6 +1224,30 @@ function kill_session() {
   session_destroy();  
 }
 
+// The rewrite rules don't like extra slashes.
+// These functions get rid of and restore them for BASE64 strings
+function deslash($s) {
+  return str_replace('/', '*', $s);
+}
+
+function reslash($s) {
+  return str_replace('*', '/', $s);
+}
+
+// This is a kluge to get us home from one of the rewritten URLs.
+// It recognizes those, and forces up a directory for them.
+// dd = double-dot (or not)
+function dd () {
+  $uri = $_SERVER["REQUEST_URI"];
+  $u = parse_url($uri);
+  $path = $u['path'];
+  $path = explode('/', $path);
+  $len = count($path);
+  $last = '';
+  if ($len > 1) $last = $path[$len-2];
+  if ($last=='videos' || $last=='view' || $last=='admin') echo "..";
+  else echo ".";
+}
 
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1/Apache 2.0

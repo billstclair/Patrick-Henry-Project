@@ -23,7 +23,7 @@ If you think it an idea with potential, run with it.
 Ann
 </p></blockquote>
 <p>
-And here's her video:
+And here's Ms. Barnhardt's video:
 </p>
 <p style="text-align: center;">
 <iframe width="560" height="315" src="http://www.youtube.com/embed/Cup9CgSjr9g" frameborder="0" allowfullscreen></iframe><br/>
