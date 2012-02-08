@@ -122,7 +122,7 @@ function checkadmin($email, $password) {
       }
     </script>
   </head>
-  <body background='background.png' onload='doonload();'>
+  <body background='<?php dd(); ?>/background.png' onload='doonload();'>
     <div style="width: 60em; margin: 4em auto 4em auto; border: 1px solid blue; padding: 1em; background-color: white;">
       <p style="text-align: center; font-weight: bold; font-size: 125%;">
         The Patrick Henry Project</p>
@@ -403,7 +403,7 @@ function displayPost($newpostp=FALSE) {
                 Your video information has been submitted for moderation. It will appear in the list of videos after approval.
               </p>
               </p>
-                <a href='<?php dd(); ?>/?&v=<?php echo $postnum; ?>'>Click here</a> for your video's permanent page.</a>
+                <a href='<?php dd(); ?>/view/<?php echo $postnum; ?>'>Click here</a> for your video's permanent page.</a>
               </p>
 <?php
   } else {
@@ -416,7 +416,7 @@ function displayPost($newpostp=FALSE) {
   if ($adminpost) {
 ?>
               <p style='text-align: center;'>
-                <a href='<?php dd(); ?>/?page=moderate&postnum=<?php echo $postnum; ?>'>Click here</a> to moderate this post.
+                <a href='<?php dd(); ?>/admin/moderate&postnum=<?php echo $postnum; ?>'>Click here</a> to moderate this post.
               </p>
 <?php
 }
@@ -442,7 +442,7 @@ function finishpost() {
                 Your updated video information has been saved. It will appear on the site after a moderator approves it.
               </p>
               <p>
-                <a href="<?php dd(); ?>/?&v=<?php echo $postnum; ?>">Click here</a> for your video's permanent page.
+                <a href="<?php dd(); ?>/view/<?php echo $postnum; ?>">Click here</a> for your video's permanent page.
               </p>
 <?php
        return;
@@ -837,7 +837,7 @@ function post($error=null) {
    if ($postnum) {
 ?>
               </p>
-                <a href='<?php dd(); ?>/?&v=<?php echo $postnum; ?>'>Click here</a> for your video's permanent page.</a>
+                <a href='<?php dd(); ?>/view/<?php echo $postnum; ?>'>Click here</a> for your video's permanent page.</a>
               </p>
               <p>
                 To make changes to your post, fill in your "Email" and "Password" and change your "YouTube Video", "Name", and "Web Site" as desired. Click the "Submit" button, and you will be able to view your new information before approving the change.
@@ -1017,7 +1017,7 @@ function videos() {
      }
 ?>
                         <br/>
-                        <a href='<?php dd(); ?>/view/<?php echo $post; ?>'>View page</a>
+                        <a href='<?php dd(); ?>/view/<?php echo $post; ?>' title="View post's permanent page on this site">View page</a>
                       </p>
                     </td>
 <?php
