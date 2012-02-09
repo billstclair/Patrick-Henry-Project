@@ -53,7 +53,7 @@ class fsdb {
   }
 
   function put_internal($key, $value) {
-    if ($value === false) $value = '';
+    if ($value===FALSE || $value===NULL) $value = '';
     $blank = ($value === '');
     $filename = $this->filename($key);
     $fp = @fopen($filename, $blank ? 'r' : 'w');

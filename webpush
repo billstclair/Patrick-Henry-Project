@@ -1,3 +1,5 @@
 #!/bin/bash
 
-rsyncit -av *
+rsyncit -av --exclude test.php * .htaccess
+ssh $PHP "chgrp web /home/public/index.php"
+

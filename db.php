@@ -159,6 +159,7 @@ class db {
     global $freelistkey;
 
     $datadb = $this->datadb;
+    $datadb->put($freelistkey, '');
     $datadb->put($freelistkey, $freelist);
   }
 

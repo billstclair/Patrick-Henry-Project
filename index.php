@@ -519,7 +519,7 @@ function register() {
   $info = @$mcrypt->decrypt($info, getscrambler());
   $reginfo = @unserialize($info);
   if (!$reginfo) {
-    return post("Malformed registration info.");
+    return post("Malformed registration info");
   }
   //echo "<pre>"; print_r($reginfo); echo "</pre>\n";
   $video = $reginfo['video'];
@@ -562,7 +562,7 @@ function putmodrecord($postnum, $video, $email, $password, $name, $url) {
   $db->putemailpost($email, $postnum);
 }
 
-function putmodinfo($postnum, $info) {
+function putmodinfo($postnum, $info, $email=TRUE) {
   global $db, $admin_email;
 
   $firstp = FALSE;
@@ -573,7 +573,7 @@ function putmodinfo($postnum, $info) {
 
   $db->putmodinfo($postnum, $info);
 
-  if ($firstp) {
+  if ($email && $firstp) {
 
     // Send email to the moderator
     $baseurl = baseurl();
@@ -1108,6 +1108,10 @@ function videos() {
 ?>
                 </p>
 <?php
+  } else {
+?>
+                <p>There are no videos yet. <a href='<?php dd(); ?>/admin/post'>Post yours</a>.</p>
+<?php
   }
 }
 
@@ -1161,14 +1165,15 @@ function moderate() {
     $url = @$info['url'];
     $modinfo = $postnum ? $db->getmodinfo($post) : $info;
     $liveinfo = $db->getinfo($post);
+    $kum = $info['keepunmoderated'];
 ?>
                   <tr>
-                     <td><input type='radio' name='<?php echo $radioname; ?>' value='ok' <?php if ($modinfo) echo "checked='checked'"; else echo "disabled='disabled'"; ?>/></td>
+                     <td><input type='radio' name='<?php echo $radioname; ?>' value='ok'<?php echo $modinfo ? ($kum ? '' : " checked='checked'") : " disabled='disabled'"; ?>/></td>
                     <td><input type='radio' name='<?php echo $radioname; ?>' value='x'/></td>
-                    <td><input type='radio' name='<?php echo $radioname; ?>' value='0'<?php if (!$modinfo) echo " checked='checked'"; ?> /></td>
+                    <td><input type='radio' name='<?php echo $radioname; ?>' value='0'<?php if (!$modinfo || $kum) echo " checked='checked'"; ?> /></td>
                     <td style='text-align: right;'>
                       <input type='hidden' name='<?php echo $postname; ?>' value='<?php echo $post; ?>'/>
-                      <a target='_blank' href='<?php dd(); ?>/?&v=<?php echo $post; ?>'><?php echo $post; ?></a>
+                      <a target='_blank' href='<?php dd(); ?>/?&v=<?php echo $post; ?>'><?php echo "== $post =="; ?></a>
                     </td>
                     <td><a target='_blank' href='<?php echo $videourl; ?>'><?php echo hsc($video); ?></a></td>
                     <td><?php echo $name ? hsc($name) : "&nbsp;"; ?></td>
@@ -1223,6 +1228,7 @@ function domoderate() {
     if ($info) {
       if ($r == 'ok') {
         putmodinfo($postnum, NULL);
+        unset($info['keepunmoderated']);
         $db->putinfo($postnum, $info);
       } elseif ($r == 'x') {
         $emailhash = $info['emailhash'];
@@ -1236,6 +1242,9 @@ function domoderate() {
           $db->putemailhashpost($emailhash, '');
           $db->freepostnum($postnum);
         }
+      } else {
+        $info['keepunmoderated'] = TRUE;
+        putmodinfo($postnum, $info, FALSE);
       }
     }
   }
