@@ -973,11 +973,21 @@ function videos() {
      $video = $info['video'];
      if ($firstp) {
 ?>
+                <script type='text/javascript'>
+                  function view(video, post, name, url) {
+                    p = document.getElementById('video');
+                    p.innerHTML = "<iframe width='560' height='315' src='http://www.youtube.com/embed/" + video + "?autoplay=1' frameborder='0' allowfullscreen></iframe><br/>" + ((name || url) ? (url ? "<a href='"+url+"'>" : '') + (name ? name : 'Anonymous') + (url ? '</a>' : '') + '<br/>' : '') + "<a href='<?php echo dd(); ?>/view/" + post + "' title='View post&#39;s permanent page on this site'>View page</a>";
+                    window.scrollTo(0, 0);
+                  }
+                </script>
                 <p id='video' style='text-align: center; width='560'; margin-left: auto; margin-right: auto;'/>
                   <iframe width='560' height='315' src='http://www.youtube.com/embed/<?php echo "$video"; ?>' frameborder='0' allowfullscreen></iframe>
                   <br/>
-                  <a href='<?php dd(); ?>/view/<?php echo $nextpost; ?>'>View page</a>
+                  <a href='<?php dd(); ?>/view/<?php echo $nextpost; ?>' title="View post's permanent page on this site">View page</a>
                 </p>
+                <script type='text/javascript'>
+                  document.write("<p style='text-align: center;'>Click any thumbnail to play its video above</p>");
+                </script>
                 <table cellspacing='0' style='border: 1px solid #c0c0ff;'>
                   <tr>
 <?php
@@ -1000,7 +1010,9 @@ function videos() {
 ?>
                     <td valign='top' style="border: 1px solid #c0c0ff; padding: 0.5em;">
                       <p style='text-align: center;'>
-                        <img src='http://img.youtube.com/vi/<?php echo $video ?>/1.jpg' alt='thumbnail' width='120' height='90'/>
+                        <a href="javascript:view(<?php echo "'$video', '$post', '$name', '$url'" ?>)">
+                          <img src='http://img.youtube.com/vi/<?php echo $video ?>/1.jpg' alt='thumbnail' width='120' height='90'/>
+                        </a>
                         <a href='<?php echo $youtube; ?>' title='View on Youtube'>View on YouTube</a>
 <?php
      if ($url) {
