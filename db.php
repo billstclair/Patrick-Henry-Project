@@ -73,6 +73,7 @@ class db {
   function putinfo_internal($fsdb, $postnum, $info) {
     splitpostnum($postnum, $prefix, $idx);
     $path = $this->infopath($prefix);
+    $lock = $fsdb->lock($path, true);
     $str = $fsdb->get($path);
     $arr = $str ? unserialize($str) : array();
     if ($info) $arr[$idx] = $info;
@@ -85,6 +86,7 @@ class db {
     }
     $fsdb->put($path, '');    // Work around fsdb bug
     if ($str) $fsdb->put($path, $str);
+    if ($lock) $fsdb->unlock($lock);
   }
 
   function putinfo($postnum, $info) {
@@ -129,6 +131,13 @@ class db {
     return $res;
   }
 
+  function getcountlock() {
+    global $countkey;
+
+    $datadb = $this->datadb;
+    return $datadb->lock($countkey, true);
+  }
+
   function putcount($count) {
     global $countkey;
 
@@ -154,6 +163,7 @@ class db {
   }
 
   function nextpostnum() {
+    $lock = $this->getcountlock();
     $freelist = $this->getfreelist();
     if ($freelist) {
       $pos = strpos($freelist, ',');
@@ -169,10 +179,12 @@ class db {
       $res = $this->getcount() + 1;
       $this->putcount($res);
     }
+    if ($lock) $this->datadb->unlock($lock);
     return $res;
   }
 
   function freepostnum($postnum) {
+    $lock = $this->getcountlock();
     $count = $this->getcount() + 0;
     if ($postnum == $count) {
       $this->putcount($count-1);
@@ -185,6 +197,7 @@ class db {
       $freelist = implode($freelist, ',');
       $this->putfreelist($freelist);
     }
+    if ($lock) $this->datadb->unlock($lock);
   }
 
   function passwordhash($password, &$salt) {
@@ -325,8 +338,16 @@ class infomapper {
   }
 
   function next() {
+    while (true) {
+      $res = $this->next_internal();
+      if ($res && (!is_array($res) || count($res) > 0)) return $res;
+      if ($this->isempty()) return NULL;
+    }
+  }
+
+  function next_internal() {
     $fsdb = $this->fsdb;
-    if (count($this->contents) > 0) return array_shift($this->contents);
+    while (count($this->contents) > 0) return array_shift($this->contents);
     while (true) {
       if ($this->isempty()) return null;
       //print_r($this);

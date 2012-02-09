@@ -436,7 +436,7 @@ function finishpost() {
        return post('Invalid email or password');
      }
      if (!$edit) {
-       putmodinfo($postnum, $video, $email, $password, $name, $url);
+       putmodrecord($postnum, $video, $email, $password, $name, $url);
 ?>
               </p>
                 Your updated video information has been saved. It will appear on the site after a moderator approves it.
@@ -539,14 +539,14 @@ function register() {
   }
 
   $postnum = $db->nextpostnum();
-  putmodinfo($postnum, $video, $email, $password, $name, $url);
+  putmodrecord($postnum, $video, $email, $password, $name, $url);
 
   $email = NULL;
   $password = NULL;
   displaypost(true);
 }
 
-function putmodinfo($postnum, $video, $email, $password, $name, $url) {
+function putmodrecord($postnum, $video, $email, $password, $name, $url) {
   global $db;
 
   $passwordhash = $db->passwordhash($password, $salt);
@@ -558,8 +558,47 @@ function putmodinfo($postnum, $video, $email, $password, $name, $url) {
   if ($name) $info['name'] = $name;
   if ($url) $info['url'] = $url;
 
-  $db->putmodinfo($postnum, $info);
+  putmodinfo($postnum, $info);
   $db->putemailpost($email, $postnum);
+}
+
+function putmodinfo($postnum, $info) {
+  global $db, $admin_email;
+
+  $firstp = FALSE;
+  if ($info) {
+    $m = $db->modinfomapper();
+    if (!$m->next()) $firstp = TRUE;
+  }
+
+  $db->putmodinfo($postnum, $info);
+
+  if ($firstp) {
+
+    // Send email to the moderator
+    $baseurl = baseurl();
+    $fullurl = "$baseurl/admin/moderate";
+
+    $to = $admin_email;
+    $subject = "New or updated post at The Patrick Henry Project";
+
+     $message = "<html>
+  <head>
+    <title>$subject</title>
+  </head>
+  <body>
+    <p>Click the link below to go to the moderation page.</p>
+    <p style='margin-left: 2em;'><a href='$fullurl'>Moderate</a></p>
+  </body>
+</html>
+";
+
+     $headers  = 'MIME-Version: 1.0' . "\r\n";
+     $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
+     $headers .= 'From: admin@patrickhenryproject.org' . "\r\n";
+
+     mail($to, $subject, $message, $headers);
+  }
 }
 
 function doedit() {
@@ -611,7 +650,7 @@ function doedit() {
       $passwordhash = $db->passwordhash($newpass, $salt);
       $info['salt'] = $salt;
       $info['passwordhash'] = $passwordhash;
-      if ($modp) $db->putmodinfo($postnum, $info);
+      if ($modp) putmodinfo($postnum, $info);
       else $db->putinfo($postnum, $info);
       echo "<p>Your password has been changed.</p>";
       return;
@@ -663,7 +702,7 @@ function doedit() {
    mail($to, $subject, $message, $headers);
 
    $info['key'] = $key;
-   if ($modp) $db->putmodinfo($postnum, $info);
+   if ($modp) putmodinfo($postnum, $info);
    else $db->putinfo($postnum, $info);
 ?>
                 <p>An email has been sent to <?php echo hsc($email); ?>. Click on the link in that email to set your password.</p>
@@ -701,7 +740,7 @@ function forgot($doit=false) {
       $postinfo['salt'] = $salt;
       $postinfo['passwordhash'] = $passwordhash;
       unset($postinfo['key']);
-      if ($modp) $db->putmodinfo($postnum, $postinfo);
+      if ($modp) putmodinfo($postnum, $postinfo);
       else $db->putinfo($postnum, $postinfo);
 ?>
               <p>Your password has been set.</p>
@@ -950,7 +989,7 @@ function dodelete() {
   }
   $db->putemailpost($email, '');
   $db->putinfo($postnum, '');
-  $db->putmodinfo($postnum, '');
+  putmodinfo($postnum, '');
   $db->freepostnum($postnum);
 ?>
                 <p>Your video has been deleted.</p>
@@ -970,7 +1009,10 @@ function videos() {
      $info = $m->next();
      if (!$info) continue;
      $nextpost = $info['postnum'];
-     $video = $info['video'];
+     $video = hsc($info['video']);
+     $youtube = "http://youtu.be/$video";
+     $name = hsc(@$info['name']);
+     $url = hsc(@$info['url']);
      if ($firstp) {
 ?>
                 <script type='text/javascript'>
@@ -983,15 +1025,31 @@ function videos() {
                 <p id='video' style='text-align: center; width='560'; margin-left: auto; margin-right: auto;'/>
                   <iframe width='560' height='315' src='http://www.youtube.com/embed/<?php echo "$video"; ?>' frameborder='0' allowfullscreen></iframe>
                   <br/>
+<?php
+       if ($url) {
+?>
+                  <a href='<?php echo $url; ?>' title="Poster's web site"><?php
+         echo $name ? $name : 'Anonymous';
+         echo "</a>\n";
+?>
+                  <br/>
+<?php
+       } elseif ($name) {
+?>
+                   <?php echo "$name\n"; ?>
+                   <br/>
+<?php
+       }
+?>
                   <a href='<?php dd(); ?>/view/<?php echo $nextpost; ?>' title="View post's permanent page on this site">View page</a>
                 </p>
                 <script type='text/javascript'>
-                  document.write("<p style='text-align: center;'>Click any thumbnail to play its video above</p>");
+                  document.write("<p style='text-align: center;'>Click a thumbnail below to play its video above</p>");
                 </script>
                 <table cellspacing='0' style='border: 1px solid #c0c0ff;'>
                   <tr>
 <?php
-           $firstp = FALSE;
+       $firstp = FALSE;
      } elseif ($colcount >= $cols) {
         $colcount = 0;
         $rowcount++;
@@ -1001,10 +1059,6 @@ function videos() {
 <?php
      }
      $post = $nextpost;
-     $youtube = hsc("http://youtu.be/$video");
-     $video = hsc($video);
-     $name = hsc(@$info['name']);
-     $url = hsc(@$info['url']);
      $colcount++;
      // Hat tip: http://www.reelseo.com/youtube-thumbnail-image/
 ?>
@@ -1168,11 +1222,11 @@ function domoderate() {
     }
     if ($info) {
       if ($r == 'ok') {
-        $db->putmodinfo($postnum, NULL);
+        putmodinfo($postnum, NULL);
         $db->putinfo($postnum, $info);
       } elseif ($r == 'x') {
         $emailhash = $info['emailhash'];
-        $db->putmodinfo($postnum, NULL);
+        putmodinfo($postnum, NULL);
         $live = $db->getinfo($postnum);
         if ($live && $x) {
           $db->putinfo($postnum, NULL);
