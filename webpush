@@ -1,5 +1,7 @@
 #!/bin/bash
 
 rsyncit -av --exclude test.php * .htaccess
+
+# This is necessary for PHP safe mode on NearlyFreeSpeech.net
 ssh $PHP "chgrp web /home/public/index.php"
 

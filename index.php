@@ -394,7 +394,7 @@ function displayPost($newpostp=FALSE) {
   if ($email && $password) {
 ?>
               <p>
-                Click the "Post" button to verify your video and information. Click on the "Edit" button to change something before posting.
+                Click the "Post" button to submit your post for moderation. Click the "Edit" button to change something before posting.
               </p>
 <?php
   } elseif ($newpostp) {
@@ -901,7 +901,7 @@ function post($error=null) {
                 If you want a "Name" and/or "Web Site" to be associated with your video, enter those fields, and that will show up in your entry on the Videos pages. The "Web Site" address must begin with "http://" or "https://".
               </p>
               <p>
-                Finally, press the "Submit" button.
+                Finally, press the "Submit" button. That will take you to a page where you can view what your post will look like. If all is well, click the "Post" button at the bottom of that page to submit your post for moderation. It will appear on the "Videos" page after approval.
 <?php
   }
 }
@@ -1165,12 +1165,11 @@ function moderate() {
     $url = @$info['url'];
     $modinfo = $postnum ? $db->getmodinfo($post) : $info;
     $liveinfo = $db->getinfo($post);
-    $kum = $info['keepunmoderated'];
 ?>
                   <tr>
-                     <td><input type='radio' name='<?php echo $radioname; ?>' value='ok'<?php echo $modinfo ? ($kum ? '' : " checked='checked'") : " disabled='disabled'"; ?>/></td>
+                     <td><input type='radio' name='<?php echo $radioname; ?>' value='ok'<?php if (!$modinfo) echo "disabled='disabled'"; ?>/></td>
                     <td><input type='radio' name='<?php echo $radioname; ?>' value='x'/></td>
-                    <td><input type='radio' name='<?php echo $radioname; ?>' value='0'<?php if (!$modinfo || $kum) echo " checked='checked'"; ?> /></td>
+                    <td><input type='radio' name='<?php echo $radioname; ?>' value='0' checked='checked'"/></td>
                     <td style='text-align: right;'>
                       <input type='hidden' name='<?php echo $postname; ?>' value='<?php echo $post; ?>'/>
                       <a target='_blank' href='<?php dd(); ?>/?&v=<?php echo $post; ?>'><?php echo "== $post =="; ?></a>
