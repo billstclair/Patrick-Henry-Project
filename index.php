@@ -1067,6 +1067,7 @@ function videos() {
                         <a href="javascript:view(<?php echo "'$video', '$post', '$name', '$url'" ?>)">
                           <img src='http://img.youtube.com/vi/<?php echo $video ?>/1.jpg' alt='thumbnail' width='120' height='90'/>
                         </a>
+                        <br/>
                         <a href='<?php echo $youtube; ?>' title='View on Youtube'>View on YouTube</a>
 <?php
      if ($url) {
